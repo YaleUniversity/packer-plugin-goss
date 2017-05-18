@@ -1,0 +1,66 @@
+{
+  "variables": {
+    "iso_url": "http://mirrors.rit.edu/centos/7/isos/x86_64/CentOS-7-x86_64-NetInstall-1611.iso",
+    "iso_checksum": "156f4cb711fdbd668943711f853fb6da89581aad",
+    "iso_checksum_type ": "sha1"
+  },
+  "builders": [
+    {
+      "name": "centos-7-x86_64",
+      "type": "virtualbox-iso",
+      "communicator": "ssh",
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks7.cfg<enter>"
+      ],
+      "boot_wait": "10s",
+      "disk_size": 10240,
+      "headless": true,
+      "guest_os_type": "RedHat_64",
+      "http_directory": "http",
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "sha1",
+      "output_directory": "img_centos_7_virtualbox",
+      "ssh_username": "root",
+      "ssh_password": "changeme",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "20000s",
+      "ssh_handshake_attempts": 50,
+      "shutdown_command": "echo 'packer'|sudo -S /sbin/halt -h -p",
+      "virtualbox_version_file": ".vbox_version",
+      "hard_drive_interface": "scsi",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--paravirtprovider", "kvm"],
+        ["modifyvm", "{{.Name}}", "--nictype1", "virtio"],
+        ["modifyvm", "{{.Name}}", "--memory", "1024"],
+        ["modifyvm", "{{.Name}}", "--cpus", "1"]
+      ]
+    }
+  ],
+  "provisioners" : [
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/vagrant.sh"
+      ],
+      "execute_command": "{{ .Vars }} /bin/sh '{{.Path}}'"
+    }, {
+      "type": "goss",
+      "tests": [
+        "goss/goss.yaml"
+      ]
+    },{
+      "type": "shell",
+      "scripts": [
+        "scripts/cleanup.sh",
+        "scripts/zerodisk.sh"
+      ],
+      "execute_command": "{{ .Vars }} /bin/sh '{{.Path}}'"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant"
+    }
+  ]
+}
