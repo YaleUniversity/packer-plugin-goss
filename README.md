@@ -2,7 +2,7 @@
 
 Wouldn't it be nice if you could run [goss](https://github.com/aelsabbahy/goss) tests against an image during a packer build?
 
-Well, I thought it would, so now you can!  This currently only works for `linux` since goss only runs in linux.
+Well, I thought it would, so now you can!  This currently only works for building a `linux` image since goss only runs in linux.
 
 This runs during the provisioning process since the machine being provisioned is only available at that time.
 
