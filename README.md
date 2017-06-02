@@ -34,8 +34,8 @@ There is an example packer build with goss tests in the `example/` directory.
       "goss/goss.yaml"
     ],
     "downloadPath": "/tmp/goss-VERSION-linux-ARCH",
-    "remoteFolder": "/tmp",
-    "remotePath": "/tmp/goss",
+    "remote_folder": "/tmp",
+    "remote_path": "/tmp/goss",
     "skipInstall": false,
     "debug": false
   }
