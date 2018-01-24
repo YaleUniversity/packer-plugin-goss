@@ -19,8 +19,8 @@ type GossConfig struct {
 	Arch         string
 	URL          string
 	DownloadPath string
-	username     string
-	password     string
+	Username     string
+	Password     string
 	SkipInstall  bool
 
 	// Enable debug for goss (defaults to false)
@@ -211,7 +211,7 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && ls -al && %s %s %s validate", p.config.RemotePath, goss, p.config.GossFile, p.debug()),
+			"cd %s && %s %s %s validate", p.config.RemotePath, goss, p.config.GossFile, p.debug()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
@@ -247,22 +247,22 @@ func (p *Provisioner) wgetSslFlag() string {
 
 // Deal with Curl username and password
 func (p *Provisioner) curlUserPass() string {
-	if p.config.username != "" {
-		if p.config.password == "" {
-			return fmt.Sprintf("-u %s", p.config.username)
+	if p.config.Username != "" {
+		if p.config.Password == "" {
+			return fmt.Sprintf("-u %s", p.config.Username)
 		}
-		return fmt.Sprintf("-u %s:%s", p.config.username, p.config.password)
+		return fmt.Sprintf("-u %s:%s", p.config.Username, p.config.Password)
 	}
 	return ""
 }
 
 // Deal with Wget username and password
 func (p *Provisioner) wgetUserPass() string {
-	if p.config.username != "" {
-		if p.config.password == "" {
-			return fmt.Sprintf("--user=%s", p.config.username)
+	if p.config.Username != "" {
+		if p.config.Password == "" {
+			return fmt.Sprintf("--user=%s", p.config.Username)
 		}
-		return fmt.Sprintf("--user=%s --password=%s", p.config.username, p.config.password)
+		return fmt.Sprintf("--user=%s --password=%s", p.config.Username, p.config.Password)
 	}
 	return ""
 }
