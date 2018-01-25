@@ -19,6 +19,8 @@ type GossConfig struct {
 	Arch         string
 	URL          string
 	DownloadPath string
+	Username     string
+	Password     string
 	SkipInstall  bool
 
 	// Enable debug for goss (defaults to false)
@@ -26,6 +28,14 @@ type GossConfig struct {
 
 	// An array of tests to run.
 	Tests []string
+
+	// username for ssl auth
+
+	// skip ssl check flag
+	SkipSSLChk   bool `mapstructure:"skip_ssl"`
+
+	// The --gossfile flag
+	GossFile string `mapstructure:"goss_file"`
 
 	// The remote folder where the goss tests will be uploaded to.
 	// This should be set to a pre-existing directory, it defaults to /tmp
@@ -35,7 +45,7 @@ type GossConfig struct {
 	// This defaults to remote_folder/goss
 	RemotePath string `mapstructure:"remote_path"`
 
-	ctx interpolate.Context
+	ctx          interpolate.Context
 }
 
 // Provisioner implements a packer Provisioner
@@ -95,6 +105,10 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		p.config.Tests = make([]string, 0)
 	}
 
+	if p.config.GossFile != "" {
+		p.config.GossFile = fmt.Sprintf("--gossfile %s", p.config.GossFile)
+	}
+
 	var errs *packer.MultiError
 	if len(p.config.Tests) == 0 {
 		errs = packer.MultiErrorAppend(errs,
@@ -144,6 +158,12 @@ func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
 			if err := p.uploadFile(ui, comm, dst, src); err != nil {
 				return fmt.Errorf("Error uploading goss test: %s", err)
 			}
+		} else if s.Mode().IsDir() == true {
+			ui.Message(fmt.Sprintf("Uploading Dir %s", src))
+			dst := filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(src)))
+			if err := p.uploadDir(ui, comm, dst, src); err != nil {
+				return fmt.Errorf("Error uploading goss test: %s", err)
+			}
 		} else {
 			ui.Message(fmt.Sprintf("Ignoring %s... not a regular file", src))
 		}
@@ -169,8 +189,8 @@ func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error 
 	cmd := &packer.RemoteCmd{
 		// Fallback on wget if curl failed for any reason (such as not being installed)
 		Command: fmt.Sprintf(
-			"curl -L -o %s %s || wget -O %s %s",
-			p.config.DownloadPath, p.config.URL, p.config.DownloadPath, p.config.URL),
+			"curl -L %s %s -o %s %s || wget %s %s -O %s %s",
+			p.curlSslFlag(), p.curlUserPass(), p.config.DownloadPath, p.config.URL, p.wgetSslFlag(), p.wgetUserPass(), p.config.DownloadPath, p.config.URL),
 	}
 	ui.Message(fmt.Sprintf("Downloading Goss to %s", p.config.DownloadPath))
 	if err := cmd.StartWithUi(comm, ui); err != nil {
@@ -191,7 +211,7 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s validate", p.config.RemotePath, goss, p.debug()),
+			"cd %s && %s %s %s validate", p.config.RemotePath, goss, p.config.GossFile, p.debug()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
@@ -207,6 +227,42 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 func (p *Provisioner) debug() string {
 	if p.config.Debug == true {
 		return "-d"
+	}
+	return ""
+}
+
+func (p *Provisioner) curlSslFlag() string {
+	if p.config.SkipSSLChk == true {
+		return "-k"
+	}
+	return ""
+}
+
+func (p *Provisioner) wgetSslFlag() string {
+	if p.config.SkipSSLChk == true {
+		return "--no-check-certificate"
+	}
+	return ""
+}
+
+// Deal with Curl username and password
+func (p *Provisioner) curlUserPass() string {
+	if p.config.Username != "" {
+		if p.config.Password == "" {
+			return fmt.Sprintf("-u %s", p.config.Username)
+		}
+		return fmt.Sprintf("-u %s:%s", p.config.Username, p.config.Password)
+	}
+	return ""
+}
+
+// Deal with Wget username and password
+func (p *Provisioner) wgetUserPass() string {
+	if p.config.Username != "" {
+		if p.config.Password == "" {
+			return fmt.Sprintf("--user=%s", p.config.Username)
+		}
+		return fmt.Sprintf("--user=%s --password=%s", p.config.Username, p.config.Password)
 	}
 	return ""
 }
@@ -241,7 +297,8 @@ func (p *Provisioner) uploadFile(ui packer.Ui, comm packer.Communicator, dst, sr
 }
 
 // uploadDir uploads a directory
-func (p *Provisioner) uploadDir(ui packer.Ui, comm packer.Communicator, dst, src string, ignore []string) error {
+func (p *Provisioner) uploadDir(ui packer.Ui, comm packer.Communicator, dst, src string) error {
+	var ignore []string
 	if err := p.createDir(ui, comm, dst); err != nil {
 		return err
 	}
