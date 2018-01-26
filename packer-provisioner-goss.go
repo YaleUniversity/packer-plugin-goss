@@ -29,7 +29,8 @@ type GossConfig struct {
 	// An array of tests to run.
 	Tests []string
 
-	// username for ssl auth
+	// Use Sudo
+	UseSudo bool `mapstructure:"use_sudo"`
 
 	// skip ssl check flag
 	SkipSSLChk   bool `mapstructure:"skip_ssl"`
@@ -190,7 +191,8 @@ func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error 
 		// Fallback on wget if curl failed for any reason (such as not being installed)
 		Command: fmt.Sprintf(
 			"curl -L %s %s -o %s %s || wget %s %s -O %s %s",
-			p.curlSslFlag(), p.curlUserPass(), p.config.DownloadPath, p.config.URL, p.wgetSslFlag(), p.wgetUserPass(), p.config.DownloadPath, p.config.URL),
+			p.sslFlag("curl"), p.userPass("curl"), p.config.DownloadPath, p.config.URL,
+			p.sslFlag("wget"), p.userPass("wget"), p.config.DownloadPath, p.config.URL),
 	}
 	ui.Message(fmt.Sprintf("Downloading Goss to %s", p.config.DownloadPath))
 	if err := cmd.StartWithUi(comm, ui); err != nil {
@@ -211,7 +213,8 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s %s validate", p.config.RemotePath, goss, p.config.GossFile, p.debug()),
+			"cd %s && %s %s %s %s validate",
+			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.debug()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
@@ -231,38 +234,45 @@ func (p *Provisioner) debug() string {
 	return ""
 }
 
-func (p *Provisioner) curlSslFlag() string {
+func (p *Provisioner) sslFlag(cmdType string) string {
 	if p.config.SkipSSLChk == true {
-		return "-k"
-	}
-	return ""
-}
-
-func (p *Provisioner) wgetSslFlag() string {
-	if p.config.SkipSSLChk == true {
-		return "--no-check-certificate"
-	}
-	return ""
-}
-
-// Deal with Curl username and password
-func (p *Provisioner) curlUserPass() string {
-	if p.config.Username != "" {
-		if p.config.Password == "" {
-			return fmt.Sprintf("-u %s", p.config.Username)
+		switch(cmdType) {
+		case "curl":
+			return "-k"
+		case "wget":
+			return "--no-check-certificate"
+		default:
+			return ""
 		}
-		return fmt.Sprintf("-u %s:%s", p.config.Username, p.config.Password)
 	}
 	return ""
 }
 
-// Deal with Wget username and password
-func (p *Provisioner) wgetUserPass() string {
+// enable sudo if required
+func (p *Provisioner) enableSudo() string {
+	if p.config.UseSudo == true {
+		return "sudo"
+	}
+	return ""
+}
+
+// Deal with curl & wget username and password
+func (p *Provisioner) userPass(cmdType string) string {
 	if p.config.Username != "" {
-		if p.config.Password == "" {
-			return fmt.Sprintf("--user=%s", p.config.Username)
+		switch(cmdType) {
+		case "curl":
+			if p.config.Password == "" {
+				return fmt.Sprintf("-u %s", p.config.Username)
+			}
+			return fmt.Sprintf("-u %s:%s", p.config.Username, p.config.Password)
+		case "wget":
+			if p.config.Password == "" {
+				return fmt.Sprintf("--user=%s", p.config.Username)
+			}
+			return fmt.Sprintf("--user=%s --password=%s", p.config.Username, p.config.Password)
+		default:
+			return  ""
 		}
-		return fmt.Sprintf("--user=%s --password=%s", p.config.Username, p.config.Password)
 	}
 	return ""
 }
