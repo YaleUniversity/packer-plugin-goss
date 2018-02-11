@@ -153,13 +153,13 @@ func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
 			return fmt.Errorf("Error stating file: %s", err)
 		}
 
-		if s.Mode().IsRegular() == true {
+		if s.Mode().IsRegular() {
 			ui.Message(fmt.Sprintf("Uploading %s", src))
 			dst := filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(src)))
 			if err := p.uploadFile(ui, comm, dst, src); err != nil {
 				return fmt.Errorf("Error uploading goss test: %s", err)
 			}
-		} else if s.Mode().IsDir() == true {
+		} else if s.Mode().IsDir() {
 			ui.Message(fmt.Sprintf("Uploading Dir %s", src))
 			dst := filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(src)))
 			if err := p.uploadDir(ui, comm, dst, src); err != nil {
@@ -228,14 +228,14 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 
 // debug returns the debug flag if debug is configured
 func (p *Provisioner) debug() string {
-	if p.config.Debug == true {
+	if p.config.Debug {
 		return "-d"
 	}
 	return ""
 }
 
 func (p *Provisioner) sslFlag(cmdType string) string {
-	if p.config.SkipSSLChk == true {
+	if p.config.SkipSSLChk {
 		switch(cmdType) {
 		case "curl":
 			return "-k"
@@ -250,7 +250,7 @@ func (p *Provisioner) sslFlag(cmdType string) string {
 
 // enable sudo if required
 func (p *Provisioner) enableSudo() string {
-	if p.config.UseSudo == true {
+	if p.config.UseSudo {
 		return "sudo"
 	}
 	return ""

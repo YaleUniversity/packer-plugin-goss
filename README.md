@@ -40,8 +40,8 @@ There is an example packer build with goss tests in the `example/` directory.
     "skip_ssl": false,
     "use_sudo": false,
     "goss_file": "",
-    "Username": "",
-    "Password": "",
+    "username": "",
+    "password": "",
     "debug": false
   }
 ]
