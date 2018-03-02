@@ -19,6 +19,8 @@ type GossConfig struct {
 	Arch         string
 	URL          string
 	DownloadPath string
+	Username     string
+	Password     string
 	SkipInstall  bool
 
 	// Enable debug for goss (defaults to false)
@@ -26,6 +28,15 @@ type GossConfig struct {
 
 	// An array of tests to run.
 	Tests []string
+
+	// Use Sudo
+	UseSudo bool `mapstructure:"use_sudo"`
+
+	// skip ssl check flag
+	SkipSSLChk   bool `mapstructure:"skip_ssl"`
+
+	// The --gossfile flag
+	GossFile string `mapstructure:"goss_file"`
 
 	// The remote folder where the goss tests will be uploaded to.
 	// This should be set to a pre-existing directory, it defaults to /tmp
@@ -95,6 +106,10 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		p.config.Tests = make([]string, 0)
 	}
 
+	if p.config.GossFile != "" {
+		p.config.GossFile = fmt.Sprintf("--gossfile %s", p.config.GossFile)
+	}
+
 	var errs *packer.MultiError
 	if len(p.config.Tests) == 0 {
 		errs = packer.MultiErrorAppend(errs,
@@ -138,10 +153,16 @@ func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
 			return fmt.Errorf("Error stating file: %s", err)
 		}
 
-		if s.Mode().IsRegular() == true {
+		if s.Mode().IsRegular() {
 			ui.Message(fmt.Sprintf("Uploading %s", src))
 			dst := filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(src)))
 			if err := p.uploadFile(ui, comm, dst, src); err != nil {
+				return fmt.Errorf("Error uploading goss test: %s", err)
+			}
+		} else if s.Mode().IsDir() {
+			ui.Message(fmt.Sprintf("Uploading Dir %s", src))
+			dst := filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(src)))
+			if err := p.uploadDir(ui, comm, dst, src); err != nil {
 				return fmt.Errorf("Error uploading goss test: %s", err)
 			}
 		} else {
@@ -169,8 +190,9 @@ func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error 
 	cmd := &packer.RemoteCmd{
 		// Fallback on wget if curl failed for any reason (such as not being installed)
 		Command: fmt.Sprintf(
-			"curl -L -o %s %s || wget -O %s %s",
-			p.config.DownloadPath, p.config.URL, p.config.DownloadPath, p.config.URL),
+			"curl -L %s %s -o %s %s || wget %s %s -O %s %s",
+			p.sslFlag("curl"), p.userPass("curl"), p.config.DownloadPath, p.config.URL,
+			p.sslFlag("wget"), p.userPass("wget"), p.config.DownloadPath, p.config.URL),
 	}
 	ui.Message(fmt.Sprintf("Downloading Goss to %s", p.config.DownloadPath))
 	if err := cmd.StartWithUi(comm, ui); err != nil {
@@ -191,7 +213,8 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s validate", p.config.RemotePath, goss, p.debug()),
+			"cd %s && %s %s %s %s validate",
+			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.debug()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
@@ -205,8 +228,51 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 
 // debug returns the debug flag if debug is configured
 func (p *Provisioner) debug() string {
-	if p.config.Debug == true {
+	if p.config.Debug {
 		return "-d"
+	}
+	return ""
+}
+
+func (p *Provisioner) sslFlag(cmdType string) string {
+	if p.config.SkipSSLChk {
+		switch(cmdType) {
+		case "curl":
+			return "-k"
+		case "wget":
+			return "--no-check-certificate"
+		default:
+			return ""
+		}
+	}
+	return ""
+}
+
+// enable sudo if required
+func (p *Provisioner) enableSudo() string {
+	if p.config.UseSudo {
+		return "sudo"
+	}
+	return ""
+}
+
+// Deal with curl & wget username and password
+func (p *Provisioner) userPass(cmdType string) string {
+	if p.config.Username != "" {
+		switch(cmdType) {
+		case "curl":
+			if p.config.Password == "" {
+				return fmt.Sprintf("-u %s", p.config.Username)
+			}
+			return fmt.Sprintf("-u %s:%s", p.config.Username, p.config.Password)
+		case "wget":
+			if p.config.Password == "" {
+				return fmt.Sprintf("--user=%s", p.config.Username)
+			}
+			return fmt.Sprintf("--user=%s --password=%s", p.config.Username, p.config.Password)
+		default:
+			return  ""
+		}
 	}
 	return ""
 }
@@ -241,7 +307,8 @@ func (p *Provisioner) uploadFile(ui packer.Ui, comm packer.Communicator, dst, sr
 }
 
 // uploadDir uploads a directory
-func (p *Provisioner) uploadDir(ui packer.Ui, comm packer.Communicator, dst, src string, ignore []string) error {
+func (p *Provisioner) uploadDir(ui packer.Ui, comm packer.Communicator, dst, src string) error {
+	var ignore []string
 	if err := p.createDir(ui, comm, dst); err != nil {
 		return err
 	}
