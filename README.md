@@ -39,6 +39,7 @@ There is an example packer build with goss tests in the `example/` directory.
     "skipInstall": false,
     "skip_ssl": false,
     "use_sudo": false,
+    "format": "",
     "goss_file": "",
     "username": "",
     "password": "",
