@@ -46,8 +46,15 @@ type GossConfig struct {
 	// This defaults to remote_folder/goss
 	RemotePath string `mapstructure:"remote_path"`
 
+	// The format to use for test output
+	// Available: [documentation json json_oneline junit nagios nagios_verbose rspecish silent tap]
+	// Default:   rspecish
+	Format string `mapstructure:"format"`
+
 	ctx interpolate.Context
 }
+
+var validFormats = []string{"documentation", "json", "json_oneline", "junit", "nagios", "nagios_verbose", "rspecish", "silent", "tap"}
 
 // Provisioner implements a packer Provisioner
 type Provisioner struct {
@@ -111,6 +118,21 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	var errs *packer.MultiError
+	if p.config.Format != "" {
+		valid := false
+		for _, candidate := range validFormats {
+			if p.config.Format == candidate {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			errs = packer.MultiErrorAppend(errs,
+				fmt.Errorf("Invalid format choice %s. Valid options: %v",
+					p.config.Format, validFormats))
+		}
+	}
+
 	if len(p.config.Tests) == 0 {
 		errs = packer.MultiErrorAppend(errs,
 			errors.New("tests must be specified"))
@@ -213,8 +235,8 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s %s %s validate",
-			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.debug()),
+			"cd %s && %s %s %s %s validate %s",
+			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.debug(), p.format()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
@@ -230,6 +252,13 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 func (p *Provisioner) debug() string {
 	if p.config.Debug {
 		return "-d"
+	}
+	return ""
+}
+
+func (p *Provisioner) format() string {
+	if p.config.Format != "" {
+		return fmt.Sprintf("-f %s", p.config.Format)
 	}
 	return ""
 }
