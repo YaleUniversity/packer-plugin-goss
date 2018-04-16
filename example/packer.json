@@ -1,7 +1,7 @@
 {
   "variables": {
-    "iso_url": "http://mirrors.rit.edu/centos/7/isos/x86_64/CentOS-7-x86_64-NetInstall-1611.iso",
-    "iso_checksum": "156f4cb711fdbd668943711f853fb6da89581aad",
+    "iso_url": "http://mirror.umd.edu/centos/7/isos/x86_64/CentOS-7-x86_64-NetInstall-1708.iso",
+    "iso_checksum": "22590c74ca7dd2495de4e9d6472e4bc167803a6d",
     "iso_checksum_type ": "sha1"
   },
   "builders": [
@@ -48,7 +48,8 @@
       "type": "goss",
       "tests": [
         "goss/goss.yaml"
-      ]
+      ],
+      "goss_file": "goss.yaml"
     },{
       "type": "shell",
       "scripts": [

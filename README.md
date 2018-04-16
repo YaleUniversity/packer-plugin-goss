@@ -48,6 +48,21 @@ There is an example packer build with goss tests in the `example/` directory.
 ]
 ```
 
+## Installation
+
+1. Download the most recent release for your platform from [here.](https://github.com/YaleUniversity/packer-provisioner-goss/releases).
+
+2. Rename the binary to `packer-provisioner-goss`
+
+3. Place the file in one of the directories where packer looks for plugins:
+> Once the plugin is named properly, Packer automatically discovers plugins in the following directories in the given order. If a conflicting plugin is found later, it will take precedence over one found earlier.
+>
+> The directory where packer is, or the executable directory.
+>
+> ~/.packer.d/plugins on Unix systems or %APPDATA%/packer.d/plugins on Windows.
+>
+> The current working directory.
+
 ## Author
 
 E. Camden Fisher <camden.fisher@yale.edu>
