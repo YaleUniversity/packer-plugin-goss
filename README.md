@@ -63,6 +63,8 @@ There is an example packer build with goss tests in the `example/` directory.
 >
 > The current working directory.
 
+4. Set binary to be executable `chmod +x packer-provisioner-goss`
+
 ## Author
 
 E. Camden Fisher <camden.fisher@yale.edu>
