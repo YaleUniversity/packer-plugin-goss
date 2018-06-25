@@ -123,10 +123,6 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		p.config.GossFile = fmt.Sprintf("--gossfile %s", p.config.GossFile)
 	}
 
-	if p.config.VarsFile != "" {
-		p.config.VarsFile = fmt.Sprintf("--vars %s", p.config.VarsFile)
-	}
-
 	var errs *packer.MultiError
 	if p.config.Format != "" {
 		valid := false
@@ -246,7 +242,7 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
 			"cd %s && %s %s %s %s %s validate %s",
-			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.config.VarsFile, p.debug(), p.format()),
+			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.vars(), p.debug(), p.format()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
@@ -269,6 +265,13 @@ func (p *Provisioner) debug() string {
 func (p *Provisioner) format() string {
 	if p.config.Format != "" {
 		return fmt.Sprintf("-f %s", p.config.Format)
+	}
+	return ""
+}
+
+func (p *Provisioner) vars() string {
+	if p.config.VarsFile != "" {
+		return fmt.Sprintf("--vars %s", p.config.VarsFile)
 	}
 	return ""
 }
