@@ -175,6 +175,20 @@ func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
 		return fmt.Errorf("Error creating remote directory: %s", err)
 	}
 
+	if p.config.VarsFile != "" {
+		vf, err := os.Stat(p.config.VarsFile)
+		if err != nil {
+			return fmt.Errorf("Error stating file: %s", err)
+		}
+		if vf.Mode().IsRegular() {
+			ui.Message(fmt.Sprintf("Uploading vars file %s", p.config.VarsFile))
+			varsDest := filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(p.config.VarsFile)))
+			if err := p.uploadFile(ui, comm, varsDest, p.config.VarsFile); err != nil {
+				return fmt.Errorf("Error uploading vars file: %s", err)
+			}
+		}
+	}
+
 	for _, src := range p.config.Tests {
 		s, err := os.Stat(src)
 		if err != nil {
@@ -271,7 +285,7 @@ func (p *Provisioner) format() string {
 
 func (p *Provisioner) vars() string {
 	if p.config.VarsFile != "" {
-		return fmt.Sprintf("--vars %s", p.config.VarsFile)
+		return fmt.Sprintf("--vars %s", filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(p.config.VarsFile))))
 	}
 	return ""
 }
