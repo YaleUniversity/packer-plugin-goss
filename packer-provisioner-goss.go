@@ -38,6 +38,12 @@ type GossConfig struct {
 	// The --gossfile flag
 	GossFile string `mapstructure:"goss_file"`
 
+	// The --vars flag
+	// Optional file containing variables, used within GOSS templating.
+	// Must be one of the files contained in the Tests array.
+	// Can be YAML or JSON.
+	VarsFile string `mapstructure:"vars_file"`
+
 	// The remote folder where the goss tests will be uploaded to.
 	// This should be set to a pre-existing directory, it defaults to /tmp
 	RemoteFolder string `mapstructure:"remote_folder"`
@@ -115,6 +121,10 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 
 	if p.config.GossFile != "" {
 		p.config.GossFile = fmt.Sprintf("--gossfile %s", p.config.GossFile)
+	}
+
+	if p.config.VarsFile != "" {
+		p.config.VarsFile = fmt.Sprintf("--vars %s", p.config.VarsFile)
 	}
 
 	var errs *packer.MultiError
@@ -235,8 +245,8 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s %s %s validate %s",
-			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.debug(), p.format()),
+			"cd %s && %s %s %s %s %s validate %s",
+			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.config.VarsFile, p.debug(), p.format()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
