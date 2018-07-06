@@ -41,6 +41,7 @@ There is an example packer build with goss tests in the `example/` directory.
     "use_sudo": false,
     "format": "",
     "goss_file": "",
+    "vars_file": "",
     "username": "",
     "password": "",
     "debug": false

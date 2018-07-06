@@ -38,6 +38,12 @@ type GossConfig struct {
 	// The --gossfile flag
 	GossFile string `mapstructure:"goss_file"`
 
+	// The --vars flag
+	// Optional file containing variables, used within GOSS templating.
+	// Must be one of the files contained in the Tests array.
+	// Can be YAML or JSON.
+	VarsFile string `mapstructure:"vars_file"`
+
 	// The remote folder where the goss tests will be uploaded to.
 	// This should be set to a pre-existing directory, it defaults to /tmp
 	RemoteFolder string `mapstructure:"remote_folder"`
@@ -169,6 +175,20 @@ func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
 		return fmt.Errorf("Error creating remote directory: %s", err)
 	}
 
+	if p.config.VarsFile != "" {
+		vf, err := os.Stat(p.config.VarsFile)
+		if err != nil {
+			return fmt.Errorf("Error stating file: %s", err)
+		}
+		if vf.Mode().IsRegular() {
+			ui.Message(fmt.Sprintf("Uploading vars file %s", p.config.VarsFile))
+			varsDest := filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(p.config.VarsFile)))
+			if err := p.uploadFile(ui, comm, varsDest, p.config.VarsFile); err != nil {
+				return fmt.Errorf("Error uploading vars file: %s", err)
+			}
+		}
+	}
+
 	for _, src := range p.config.Tests {
 		s, err := os.Stat(src)
 		if err != nil {
@@ -235,8 +255,8 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s %s %s validate %s",
-			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.debug(), p.format()),
+			"cd %s && %s %s %s %s %s validate %s",
+			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.vars(), p.debug(), p.format()),
 	}
 	if err := cmd.StartWithUi(comm, ui); err != nil {
 		return err
@@ -259,6 +279,13 @@ func (p *Provisioner) debug() string {
 func (p *Provisioner) format() string {
 	if p.config.Format != "" {
 		return fmt.Sprintf("-f %s", p.config.Format)
+	}
+	return ""
+}
+
+func (p *Provisioner) vars() string {
+	if p.config.VarsFile != "" {
+		return fmt.Sprintf("--vars %s", filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(p.config.VarsFile))))
 	}
 	return ""
 }
