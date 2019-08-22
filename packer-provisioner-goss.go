@@ -1,17 +1,15 @@
 package main
 
 import (
+    "context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-    "github.com/hashicorp/packer/common"
-    commonhelper "github.com/hashicorp/packer/helper/common"
 	"github.com/hashicorp/packer/helper/config"
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/packer/plugin"
-	"github.com/hashicorp/packer/provisioner"
 	"github.com/hashicorp/packer/template/interpolate"
 )
 
@@ -162,7 +160,7 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 }
 
 // Provision runs the Goss Provisioner
-func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
+func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.Communicator) error {
 	ui.Say("Provisioning with Goss")
 
 	if !p.config.SkipInstall {
@@ -221,11 +219,6 @@ func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
 	}
 
 	return nil
-}
-
-// Cancel just exists when provision is cancelled
-func (p *Provisioner) Cancel() {
-	os.Exit(0)
 }
 
 // installGoss downloads the Goss binary on the remote host
