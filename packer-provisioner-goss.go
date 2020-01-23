@@ -34,6 +34,10 @@ type GossConfig struct {
 	// An array of tests to run.
 	Tests []string
 
+	// Goss options for retry and timeouts
+	RetryTimeout string `mapstructure:"retry_timeout"`
+	Sleep        string `mapstructure:"sleep"`
+
 	// Use Sudo
 	UseSudo bool `mapstructure:"use_sudo"`
 
@@ -262,8 +266,9 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s %s %s %s validate %s",
-			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile, p.vars(), p.debug(), p.format()),
+			"cd %s && %s %s %s %s %s validate --retry-timeout %s --sleep %s %s",
+			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile,
+			p.vars(), p.debug(), p.retryTimeout(), p.sleep(), p.format()),
 	}
 	if err := cmd.RunWithUi(ctx, comm, ui); err != nil {
 		return err
@@ -273,6 +278,20 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	}
 	ui.Say(fmt.Sprintf("Goss tests ran successfully"))
 	return nil
+}
+
+func (p *Provisioner) retryTimeout() string {
+	if p.config.RetryTimeout == "" {
+		return "0s" // goss default
+	}
+	return p.config.RetryTimeout
+}
+
+func (p *Provisioner) sleep() string {
+	if p.config.Sleep == "" {
+		return "1s" // goss default
+	}
+	return p.config.Sleep
 }
 
 // debug returns the debug flag if debug is configured
