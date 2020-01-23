@@ -49,7 +49,9 @@
       "tests": [
         "goss/goss.yaml"
       ],
-      "goss_file": "goss.yaml"
+      "goss_file": "goss.yaml",
+      "sleep": "2s",
+      "retry_timeout": "5s"
     },{
       "type": "shell",
       "scripts": [
