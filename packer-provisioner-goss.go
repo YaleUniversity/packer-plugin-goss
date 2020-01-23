@@ -1,11 +1,15 @@
+//go:generate mapstructure-to-hcl2 -type GossConfig
+
 package main
 
 import (
-    "context"
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/hashicorp/hcl/v2/hcldec"
 
 	"github.com/hashicorp/packer/helper/config"
 	"github.com/hashicorp/packer/packer"
@@ -34,7 +38,7 @@ type GossConfig struct {
 	UseSudo bool `mapstructure:"use_sudo"`
 
 	// skip ssl check flag
-	SkipSSLChk   bool `mapstructure:"skip_ssl"`
+	SkipSSLChk bool `mapstructure:"skip_ssl"`
 
 	// The --gossfile flag
 	GossFile string `mapstructure:"goss_file"`
@@ -77,6 +81,10 @@ func main() {
 	server.Serve()
 }
 
+func (p *Provisioner) ConfigSpec() hcldec.ObjectSpec {
+	return p.config.FlatMapstructure().HCL2Spec()
+}
+
 // Prepare gets the Goss Privisioner ready to run
 func (p *Provisioner) Prepare(raws ...interface{}) error {
 	err := config.Decode(&p.config, &config.DecodeOpts{
@@ -91,7 +99,7 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	if p.config.Version == "" {
-		p.config.Version = "0.3.2"
+		p.config.Version = "0.3.9"
 	}
 
 	if p.config.Arch == "" {
@@ -160,7 +168,7 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 }
 
 // Provision runs the Goss Provisioner
-func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.Communicator) error {
+func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.Communicator, generatedData map[string]interface{}) error {
 	ui.Say("Provisioning with Goss")
 
 	if !p.config.SkipInstall {
@@ -213,7 +221,7 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 		}
 	}
 
-	ui.Say("Running goss tests...")
+	ui.Say("\n\n\nRunning goss tests...")
 	if err := p.runGoss(ui, comm); err != nil {
 		return fmt.Errorf("Error running Goss: %s", err)
 	}
@@ -224,7 +232,7 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 // installGoss downloads the Goss binary on the remote host
 func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error {
 	ui.Message(fmt.Sprintf("Installing Goss from, %s", p.config.URL))
-    ctx := context.TODO()
+	ctx := context.TODO()
 
 	cmd := &packer.RemoteCmd{
 		// Fallback on wget if curl failed for any reason (such as not being installed)
@@ -291,7 +299,7 @@ func (p *Provisioner) vars() string {
 
 func (p *Provisioner) sslFlag(cmdType string) string {
 	if p.config.SkipSSLChk {
-		switch(cmdType) {
+		switch cmdType {
 		case "curl":
 			return "-k"
 		case "wget":
@@ -314,7 +322,7 @@ func (p *Provisioner) enableSudo() string {
 // Deal with curl & wget username and password
 func (p *Provisioner) userPass(cmdType string) string {
 	if p.config.Username != "" {
-		switch(cmdType) {
+		switch cmdType {
 		case "curl":
 			if p.config.Password == "" {
 				return fmt.Sprintf("-u %s", p.config.Username)
@@ -326,7 +334,7 @@ func (p *Provisioner) userPass(cmdType string) string {
 			}
 			return fmt.Sprintf("--user=%s --password=%s", p.config.Username, p.config.Password)
 		default:
-			return  ""
+			return ""
 		}
 	}
 	return ""
