@@ -18,6 +18,8 @@ type FlatGossConfig struct {
 	SkipInstall  *bool    `cty:"skip_install"`
 	Debug        *bool    `cty:"debug"`
 	Tests        []string `cty:"tests"`
+	RetryTimeout *string  `mapstructure:"retry_timeout" cty:"retry_timeout"`
+	Sleep        *string  `mapstructure:"sleep" cty:"sleep"`
 	UseSudo      *bool    `mapstructure:"use_sudo" cty:"use_sudo"`
 	SkipSSLChk   *bool    `mapstructure:"skip_ssl" cty:"skip_ssl"`
 	GossFile     *string  `mapstructure:"goss_file" cty:"goss_file"`
@@ -48,6 +50,8 @@ func (*FlatGossConfig) HCL2Spec() map[string]hcldec.Spec {
 		"skip_install":  &hcldec.AttrSpec{Name: "skip_install", Type: cty.Bool, Required: false},
 		"debug":         &hcldec.AttrSpec{Name: "debug", Type: cty.Bool, Required: false},
 		"tests":         &hcldec.AttrSpec{Name: "tests", Type: cty.List(cty.String), Required: false},
+		"retry_timeout": &hcldec.AttrSpec{Name: "retry_timeout", Type: cty.String, Required: false},
+		"sleep":         &hcldec.AttrSpec{Name: "sleep", Type: cty.String, Required: false},
 		"use_sudo":      &hcldec.AttrSpec{Name: "use_sudo", Type: cty.Bool, Required: false},
 		"skip_ssl":      &hcldec.AttrSpec{Name: "skip_ssl", Type: cty.Bool, Required: false},
 		"goss_file":     &hcldec.AttrSpec{Name: "goss_file", Type: cty.String, Required: false},
