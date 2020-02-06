@@ -58,6 +58,7 @@ There is an example packer build with goss tests in the `example/` directory.
 2. Rename the binary to `packer-provisioner-goss`
 
 3. Place the file in one of the directories where packer looks for plugins:
+
 > Once the plugin is named properly, Packer automatically discovers plugins in the following directories in the given order. If a conflicting plugin is found later, it will take precedence over one found earlier.
 >
 > The directory where packer is, or the executable directory.
@@ -68,6 +69,21 @@ There is an example packer build with goss tests in the `example/` directory.
 
 4. Set binary to be executable `chmod +x packer-provisioner-goss`
 
+## Build
+
+### Using Golang docker image
+
+```bash
+docker run --rm -it -v "$PWD":/usr/src/packer-provisioner-goss -w /usr/src/packer-provisioner-goss -e 'VERSION=v1.0.0' golang:1.13 bash
+for GOOS in darwin linux windows; do
+  for GOARCH in 386 amd64; do
+    export GOOS GOARCH
+      go get -v ./...
+      go build -v -o packer-provisioner-goss-${VERSION}-$GOOS-$GOARCH
+  done
+done
+```
+
 ## Author
 
 E. Camden Fisher <camden.fisher@yale.edu>
@@ -76,7 +92,7 @@ E. Camden Fisher <camden.fisher@yale.edu>
 
 ### MIT
 
-Copyright 2017 Yale University
+Copyright 2017-2020 Yale University
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
