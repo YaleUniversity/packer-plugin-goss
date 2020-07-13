@@ -44,7 +44,6 @@ There is an example packer build with goss tests in the `example/` directory.
     "vars_file": "",
     "username": "",
     "password": "",
-    "debug": false,
     "retry_timeout": "0s",
     "sleep": "1s"
   }

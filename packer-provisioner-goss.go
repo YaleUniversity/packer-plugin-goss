@@ -29,9 +29,6 @@ type GossConfig struct {
 	Password     string
 	SkipInstall  bool
 
-	// Enable debug for goss (defaults to false)
-	Debug bool
-
 	// An array of tests to run.
 	Tests []string
 
@@ -128,12 +125,10 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-linux-%s", p.config.Version, p.config.Arch)
 		} else {
 			list := strings.Split(p.config.URL, "/")
-			arch := strings.Split(list[len(list) - 1], "-")[2]
-			version := string([]rune(list[len(list) - 2])[1:])
-			fmt.Printf("Version and arch are %s and %s", version, arch)
+			arch := strings.Split(list[len(list)-1], "-")[2]
+			version := strings.TrimPrefix(list[len(list)-2], "v")
 			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-linux-%s", version, arch)
 		}
-
 	}
 
 	if p.config.RemoteFolder == "" {
@@ -297,9 +292,9 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
+			"cd %s && %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
 			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile,
-			p.vars(), p.debug(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions()),
+			p.vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions()),
 	}
 	if err := cmd.RunWithUi(ctx, comm, ui); err != nil {
 		return err
@@ -325,14 +320,6 @@ func (p *Provisioner) sleep() string {
 	return p.config.Sleep
 }
 
-// debug returns the debug flag if debug is configured
-func (p *Provisioner) debug() string {
-	if p.config.Debug {
-		return "-d"
-	}
-	return ""
-}
-
 func (p *Provisioner) format() string {
 	if p.config.Format != "" {
 		return fmt.Sprintf("-f %s", p.config.Format)
@@ -340,14 +327,12 @@ func (p *Provisioner) format() string {
 	return ""
 }
 
-
 func (p *Provisioner) formatOptions() string {
 	if p.config.FormatOptions != "" {
 		return fmt.Sprintf("-o %s", p.config.FormatOptions)
 	}
 	return ""
 }
-
 
 func (p *Provisioner) vars() string {
 	if p.config.VarsFile != "" {

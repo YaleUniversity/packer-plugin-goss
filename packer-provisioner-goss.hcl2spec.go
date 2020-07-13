@@ -16,7 +16,6 @@ type FlatGossConfig struct {
 	Username      *string  `cty:"username"`
 	Password      *string  `cty:"password"`
 	SkipInstall   *bool    `cty:"skip_install"`
-	Debug         *bool    `cty:"debug"`
 	Tests         []string `cty:"tests"`
 	RetryTimeout  *string  `mapstructure:"retry_timeout" cty:"retry_timeout"`
 	Sleep         *string  `mapstructure:"sleep" cty:"sleep"`
@@ -49,7 +48,6 @@ func (*FlatGossConfig) HCL2Spec() map[string]hcldec.Spec {
 		"username":       &hcldec.AttrSpec{Name: "username", Type: cty.String, Required: false},
 		"password":       &hcldec.AttrSpec{Name: "password", Type: cty.String, Required: false},
 		"skip_install":   &hcldec.AttrSpec{Name: "skip_install", Type: cty.Bool, Required: false},
-		"debug":          &hcldec.AttrSpec{Name: "debug", Type: cty.Bool, Required: false},
 		"tests":          &hcldec.AttrSpec{Name: "tests", Type: cty.List(cty.String), Required: false},
 		"retry_timeout":  &hcldec.AttrSpec{Name: "retry_timeout", Type: cty.String, Required: false},
 		"sleep":          &hcldec.AttrSpec{Name: "sleep", Type: cty.String, Required: false},
