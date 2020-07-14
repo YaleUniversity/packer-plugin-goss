@@ -1,69 +1,91 @@
 {
-  "variables": {
-    "iso_url": "http://mirror.umd.edu/centos/7/isos/x86_64/CentOS-7-x86_64-NetInstall-1708.iso",
-    "iso_checksum": "22590c74ca7dd2495de4e9d6472e4bc167803a6d",
-    "iso_checksum_type ": "sha1"
-  },
   "builders": [
     {
-      "name": "centos-7-x86_64",
-      "type": "virtualbox-iso",
-      "communicator": "ssh",
       "boot_command": [
         "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks7.cfg<enter>"
       ],
       "boot_wait": "10s",
+      "communicator": "ssh",
       "disk_size": 10240,
-      "headless": true,
       "guest_os_type": "RedHat_64",
+      "hard_drive_interface": "scsi",
+      "headless": false,
       "http_directory": "http",
+      "iso_checksum": "sha256:{{user `iso_checksum`}}",
       "iso_url": "{{user `iso_url`}}",
-      "iso_checksum": "{{user `iso_checksum`}}",
-      "iso_checksum_type": "sha1",
+      "name": "centos-7-x86_64",
       "output_directory": "img_centos_7_virtualbox",
-      "ssh_username": "root",
+      "shutdown_command": "echo 'packer'|sudo -S /sbin/halt -h -p",
+      "ssh_handshake_attempts": 50,
       "ssh_password": "changeme",
       "ssh_port": 22,
-      "ssh_wait_timeout": "20000s",
-      "ssh_handshake_attempts": 50,
-      "shutdown_command": "echo 'packer'|sudo -S /sbin/halt -h -p",
-      "virtualbox_version_file": ".vbox_version",
-      "hard_drive_interface": "scsi",
+      "ssh_timeout": "20000s",
+      "ssh_username": "root",
+      "type": "virtualbox-iso",
       "vboxmanage": [
-        ["modifyvm", "{{.Name}}", "--paravirtprovider", "kvm"],
-        ["modifyvm", "{{.Name}}", "--nictype1", "virtio"],
-        ["modifyvm", "{{.Name}}", "--memory", "1024"],
-        ["modifyvm", "{{.Name}}", "--cpus", "1"]
-      ]
-    }
-  ],
-  "provisioners" : [
-    {
-      "type": "shell",
-      "scripts": [
-        "scripts/vagrant.sh"
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--paravirtprovider",
+          "kvm"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--nictype1",
+          "virtio"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--memory",
+          "1024"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--cpus",
+          "1"
+        ]
       ],
-      "execute_command": "{{ .Vars }} /bin/sh '{{.Path}}'"
-    }, {
-      "type": "goss",
-      "tests": [
-        "goss/goss.yaml"
-      ],
-      "goss_file": "goss.yaml",
-      "sleep": "2s",
-      "retry_timeout": "5s"
-    },{
-      "type": "shell",
-      "scripts": [
-        "scripts/cleanup.sh",
-        "scripts/zerodisk.sh"
-      ],
-      "execute_command": "{{ .Vars }} /bin/sh '{{.Path}}'"
+      "virtualbox_version_file": ".vbox_version"
     }
   ],
   "post-processors": [
     {
       "type": "vagrant"
     }
-  ]
+  ],
+  "provisioners": [
+    {
+      "execute_command": "{{ .Vars }} /bin/sh '{{.Path}}'",
+      "scripts": [
+        "scripts/vagrant.sh"
+      ],
+      "type": "shell"
+    },
+    {
+      "goss_file": "goss.yaml",
+      "retry_timeout": "5s",
+      "sleep": "2s",
+      "tests": [
+        "goss/goss.yaml"
+      ],
+      "type": "goss"
+    },
+    {
+      "execute_command": "{{ .Vars }} /bin/sh '{{.Path}}'",
+      "scripts": [
+        "scripts/cleanup.sh",
+        "scripts/zerodisk.sh"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "iso_checksum": "101bc813d2af9ccf534d112cbe8670e6d900425b297d1a4d2529c5ad5f226372",
+    "iso_checksum_type ": "sha256",
+    "iso_url": "http://mirror.net.cen.ct.gov/centos/7.8.2003/isos/x86_64/CentOS-7-x86_64-NetInstall-2003.iso"
+  }
 }
+
