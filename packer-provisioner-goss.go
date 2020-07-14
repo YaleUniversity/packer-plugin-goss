@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 
@@ -27,9 +28,6 @@ type GossConfig struct {
 	Username     string
 	Password     string
 	SkipInstall  bool
-
-	// Enable debug for goss (defaults to false)
-	Debug bool
 
 	// An array of tests to run.
 	Tests []string
@@ -66,10 +64,16 @@ type GossConfig struct {
 	// Default:   rspecish
 	Format string `mapstructure:"format"`
 
+	// The format options to use for printing test output
+	// Available: [perfdata verbose pretty]
+	// Default:   verbose
+	FormatOptions string `mapstructure:"format_options"`
+
 	ctx interpolate.Context
 }
 
 var validFormats = []string{"documentation", "json", "json_oneline", "junit", "nagios", "nagios_verbose", "rspecish", "silent", "tap"}
+var validFormatOptions = []string{"perfdata", "verbose", "pretty"}
 
 // Provisioner implements a packer Provisioner
 type Provisioner struct {
@@ -117,7 +121,14 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	if p.config.DownloadPath == "" {
-		p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-linux-%s", p.config.Version, p.config.Arch)
+		if p.config.URL == "" {
+			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-linux-%s", p.config.Version, p.config.Arch)
+		} else {
+			list := strings.Split(p.config.URL, "/")
+			arch := strings.Split(list[len(list)-1], "-")[2]
+			version := strings.TrimPrefix(list[len(list)-2], "v")
+			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-linux-%s", version, arch)
+		}
 	}
 
 	if p.config.RemoteFolder == "" {
@@ -149,6 +160,21 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 			errs = packer.MultiErrorAppend(errs,
 				fmt.Errorf("Invalid format choice %s. Valid options: %v",
 					p.config.Format, validFormats))
+		}
+	}
+
+	if p.config.FormatOptions != "" {
+		valid := false
+		for _, candidate := range validFormatOptions {
+			if p.config.FormatOptions == candidate {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			errs = packer.MultiErrorAppend(errs,
+				fmt.Errorf("Invalid format options choice %s. Valid options: %v",
+					p.config.FormatOptions, validFormatOptions))
 		}
 	}
 
@@ -266,9 +292,9 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 
 	cmd := &packer.RemoteCmd{
 		Command: fmt.Sprintf(
-			"cd %s && %s %s %s %s %s validate --retry-timeout %s --sleep %s %s",
+			"cd %s && %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
 			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile,
-			p.vars(), p.debug(), p.retryTimeout(), p.sleep(), p.format()),
+			p.vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions()),
 	}
 	if err := cmd.RunWithUi(ctx, comm, ui); err != nil {
 		return err
@@ -294,17 +320,16 @@ func (p *Provisioner) sleep() string {
 	return p.config.Sleep
 }
 
-// debug returns the debug flag if debug is configured
-func (p *Provisioner) debug() string {
-	if p.config.Debug {
-		return "-d"
+func (p *Provisioner) format() string {
+	if p.config.Format != "" {
+		return fmt.Sprintf("-f %s", p.config.Format)
 	}
 	return ""
 }
 
-func (p *Provisioner) format() string {
-	if p.config.Format != "" {
-		return fmt.Sprintf("-f %s", p.config.Format)
+func (p *Provisioner) formatOptions() string {
+	if p.config.FormatOptions != "" {
+		return fmt.Sprintf("-o %s", p.config.FormatOptions)
 	}
 	return ""
 }
