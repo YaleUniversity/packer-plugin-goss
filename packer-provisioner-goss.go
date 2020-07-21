@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -50,6 +51,10 @@ type GossConfig struct {
 	// Must be one of the files contained in the Tests array.
 	// Can be YAML or JSON.
 	VarsFile string `mapstructure:"vars_file"`
+
+	// The --vars-inline flag
+	// Optional inline variables that overrides JSON file vars
+	VarsInline map[string]string `mapstructure:"vars_inline"`
 
 	// The remote folder where the goss tests will be uploaded to.
 	// This should be set to a pre-existing directory, it defaults to /tmp
@@ -227,6 +232,10 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 			}
 		}
 	}
+	if len(p.config.VarsInline) != 0 {
+		ui.Message(fmt.Sprintf("Inline variables are %v", p.config.VarsInline))
+		ui.Message(fmt.Sprintf("Inline variable string is %s", p.inline_vars()))
+	}
 
 	for _, src := range p.config.Tests {
 		s, err := os.Stat(src)
@@ -290,11 +299,13 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	ctx := context.TODO()
 
+	strcmd := fmt.Sprintf("cd %s && %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
+		p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile,
+		p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions())
+	ui.Message(fmt.Sprintf("Command : %s", strcmd))
+
 	cmd := &packer.RemoteCmd{
-		Command: fmt.Sprintf(
-			"cd %s && %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
-			p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile,
-			p.vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions()),
+		Command: strcmd,
 	}
 	if err := cmd.RunWithUi(ctx, comm, ui); err != nil {
 		return err
@@ -337,6 +348,18 @@ func (p *Provisioner) formatOptions() string {
 func (p *Provisioner) vars() string {
 	if p.config.VarsFile != "" {
 		return fmt.Sprintf("--vars %s", filepath.ToSlash(filepath.Join(p.config.RemotePath, filepath.Base(p.config.VarsFile))))
+	}
+	return ""
+}
+
+func (p *Provisioner) inline_vars() string {
+	if len(p.config.VarsInline) != 0 {
+		inlineVarsJson, err := json.Marshal(p.config.VarsInline)
+		if err == nil {
+			return fmt.Sprintf("--vars-inline '%s'", string(inlineVarsJson))
+		} else {
+			fmt.Errorf("Error converting inline vars to json string %v", err)
+		}
 	}
 	return ""
 }
