@@ -29,6 +29,7 @@ type GossConfig struct {
 	Username     string
 	Password     string
 	SkipInstall  bool
+	Inspect      bool
 
 	// An array of tests to run.
 	Tests []string
@@ -311,9 +312,16 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 		return err
 	}
 	if cmd.ExitStatus() != 0 {
-		return fmt.Errorf("goss non-zero exit status")
+		// Inspect mode is on. Report failure but don't fail.
+		if p.config.Inspect {
+			ui.Say(fmt.Sprintf("Goss tests failed"))
+			ui.Say(fmt.Sprintf("Inpect mode on : proceeding without failing Packer"))
+		} else {
+			return fmt.Errorf("goss non-zero exit status")
+		}
+	} else {
+		ui.Say(fmt.Sprintf("Goss tests ran successfully"))
 	}
-	ui.Say(fmt.Sprintf("Goss tests ran successfully"))
 	return nil
 }
 

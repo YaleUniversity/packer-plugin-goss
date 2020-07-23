@@ -26,24 +26,34 @@ There is an example packer build with goss tests in the `example/` directory.
 ```json
 "provisioners" : [
   {
+    # Packer Args
     "type": "goss",
-    "version": "0.3.2",
+
+    # Packer Provisioner Args
     "arch": "amd64",
+    "downloadPath": "/tmp/goss-VERSION-linux-ARCH",
+    "inspect": "{{user `inspect_mode`}}",
+    "password": "",
+    "skipInstall": false,
     "url":"https://github.com/aelsabbahy/goss/releases/download/vVERSION/goss-linux-ARCH",
+    "username": "",
+    "version": "0.3.2",
+
+    # GOSS Args
     "tests": [
       "goss/goss.yaml"
     ],
-    "downloadPath": "/tmp/goss-VERSION-linux-ARCH",
     "remote_folder": "/tmp",
     "remote_path": "/tmp/goss",
-    "skipInstall": false,
     "skip_ssl": false,
     "use_sudo": false,
     "format": "",
     "goss_file": "",
     "vars_file": "",
-    "username": "",
-    "password": "",
+    "vars_inline": {
+      "OS": "centos",
+      "version": "{{user `version`}}"
+    },
     "retry_timeout": "0s",
     "sleep": "1s"
   }

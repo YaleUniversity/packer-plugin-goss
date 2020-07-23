@@ -28,6 +28,7 @@ type FlatGossConfig struct {
 	RemotePath    *string           `mapstructure:"remote_path" cty:"remote_path"`
 	Format        *string           `mapstructure:"format" cty:"format"`
 	FormatOptions *string           `mapstructure:"format_options" cty:"format_options"`
+	Inspect       *bool             `cty:"inspect"`
 }
 
 // FlatMapstructure returns a new FlatGossConfig.
@@ -61,6 +62,7 @@ func (*FlatGossConfig) HCL2Spec() map[string]hcldec.Spec {
 		"remote_path":    &hcldec.AttrSpec{Name: "remote_path", Type: cty.String, Required: false},
 		"format":         &hcldec.AttrSpec{Name: "format", Type: cty.String, Required: false},
 		"format_options": &hcldec.AttrSpec{Name: "format_options", Type: cty.String, Required: false},
+		"inspect":        &hcldec.AttrSpec{Name: "inspect", Type: cty.Bool, Required: false},
 	}
 	return s
 }
