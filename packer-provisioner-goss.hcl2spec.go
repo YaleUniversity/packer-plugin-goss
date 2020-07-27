@@ -24,6 +24,7 @@ type FlatGossConfig struct {
 	GossFile      *string           `mapstructure:"goss_file" cty:"goss_file"`
 	VarsFile      *string           `mapstructure:"vars_file" cty:"vars_file"`
 	VarsInline    map[string]string `mapstructure:"vars_inline" cty:"vars_inline"`
+	VarsEnv       map[string]string `mapstructure:"vars_env" cty:"vars_env"`
 	RemoteFolder  *string           `mapstructure:"remote_folder" cty:"remote_folder"`
 	RemotePath    *string           `mapstructure:"remote_path" cty:"remote_path"`
 	Format        *string           `mapstructure:"format" cty:"format"`
@@ -58,6 +59,7 @@ func (*FlatGossConfig) HCL2Spec() map[string]hcldec.Spec {
 		"goss_file":      &hcldec.AttrSpec{Name: "goss_file", Type: cty.String, Required: false},
 		"vars_file":      &hcldec.AttrSpec{Name: "vars_file", Type: cty.String, Required: false},
 		"vars_inline":    &hcldec.AttrSpec{Name: "vars_inline", Type: cty.Map(cty.String), Required: false},
+		"vars_env":       &hcldec.AttrSpec{Name: "vars_env", Type: cty.Map(cty.String), Required: false},
 		"remote_folder":  &hcldec.AttrSpec{Name: "remote_folder", Type: cty.String, Required: false},
 		"remote_path":    &hcldec.AttrSpec{Name: "remote_path", Type: cty.String, Required: false},
 		"format":         &hcldec.AttrSpec{Name: "format", Type: cty.String, Required: false},
