@@ -9,24 +9,26 @@ import (
 // FlatGossConfig is an auto-generated flat version of GossConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatGossConfig struct {
-	Version       *string  `cty:"version"`
-	Arch          *string  `cty:"arch"`
-	URL           *string  `cty:"url"`
-	DownloadPath  *string  `cty:"download_path"`
-	Username      *string  `cty:"username"`
-	Password      *string  `cty:"password"`
-	SkipInstall   *bool    `cty:"skip_install"`
-	Tests         []string `cty:"tests"`
-	RetryTimeout  *string  `mapstructure:"retry_timeout" cty:"retry_timeout"`
-	Sleep         *string  `mapstructure:"sleep" cty:"sleep"`
-	UseSudo       *bool    `mapstructure:"use_sudo" cty:"use_sudo"`
-	SkipSSLChk    *bool    `mapstructure:"skip_ssl" cty:"skip_ssl"`
-	GossFile      *string  `mapstructure:"goss_file" cty:"goss_file"`
-	VarsFile      *string  `mapstructure:"vars_file" cty:"vars_file"`
-	RemoteFolder  *string  `mapstructure:"remote_folder" cty:"remote_folder"`
-	RemotePath    *string  `mapstructure:"remote_path" cty:"remote_path"`
-	Format        *string  `mapstructure:"format" cty:"format"`
-	FormatOptions *string  `mapstructure:"format_options" cty:"format_options"`
+	Version       *string           `cty:"version"`
+	Arch          *string           `cty:"arch"`
+	URL           *string           `cty:"url"`
+	DownloadPath  *string           `cty:"download_path"`
+	Username      *string           `cty:"username"`
+	Password      *string           `cty:"password"`
+	SkipInstall   *bool             `cty:"skip_install"`
+	Tests         []string          `cty:"tests"`
+	RetryTimeout  *string           `mapstructure:"retry_timeout" cty:"retry_timeout"`
+	Sleep         *string           `mapstructure:"sleep" cty:"sleep"`
+	UseSudo       *bool             `mapstructure:"use_sudo" cty:"use_sudo"`
+	SkipSSLChk    *bool             `mapstructure:"skip_ssl" cty:"skip_ssl"`
+	GossFile      *string           `mapstructure:"goss_file" cty:"goss_file"`
+	VarsFile      *string           `mapstructure:"vars_file" cty:"vars_file"`
+	VarsInline    map[string]string `mapstructure:"vars_inline" cty:"vars_inline"`
+	RemoteFolder  *string           `mapstructure:"remote_folder" cty:"remote_folder"`
+	RemotePath    *string           `mapstructure:"remote_path" cty:"remote_path"`
+	Format        *string           `mapstructure:"format" cty:"format"`
+	FormatOptions *string           `mapstructure:"format_options" cty:"format_options"`
+	Inspect       *bool             `cty:"inspect"`
 }
 
 // FlatMapstructure returns a new FlatGossConfig.
@@ -55,10 +57,12 @@ func (*FlatGossConfig) HCL2Spec() map[string]hcldec.Spec {
 		"skip_ssl":       &hcldec.AttrSpec{Name: "skip_ssl", Type: cty.Bool, Required: false},
 		"goss_file":      &hcldec.AttrSpec{Name: "goss_file", Type: cty.String, Required: false},
 		"vars_file":      &hcldec.AttrSpec{Name: "vars_file", Type: cty.String, Required: false},
+		"vars_inline":    &hcldec.AttrSpec{Name: "vars_inline", Type: cty.Map(cty.String), Required: false},
 		"remote_folder":  &hcldec.AttrSpec{Name: "remote_folder", Type: cty.String, Required: false},
 		"remote_path":    &hcldec.AttrSpec{Name: "remote_path", Type: cty.String, Required: false},
 		"format":         &hcldec.AttrSpec{Name: "format", Type: cty.String, Required: false},
 		"format_options": &hcldec.AttrSpec{Name: "format_options", Type: cty.String, Required: false},
+		"inspect":        &hcldec.AttrSpec{Name: "inspect", Type: cty.Bool, Required: false},
 	}
 	return s
 }
