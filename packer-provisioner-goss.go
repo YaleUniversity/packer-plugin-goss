@@ -57,6 +57,9 @@ type GossConfig struct {
 	// Optional inline variables that overrides JSON file vars
 	VarsInline map[string]string `mapstructure:"vars_inline"`
 
+	// Optional env variables
+	VarsEnv map[string]string `mapstructure:"vars_env"`
+
 	// The remote folder where the goss tests will be uploaded to.
 	// This should be set to a pre-existing directory, it defaults to /tmp
 	RemoteFolder string `mapstructure:"remote_folder"`
@@ -233,9 +236,13 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 			}
 		}
 	}
+
 	if len(p.config.VarsInline) != 0 {
-		ui.Message(fmt.Sprintf("Inline variables are %v", p.config.VarsInline))
-		ui.Message(fmt.Sprintf("Inline variable string is %s", p.inline_vars()))
+		ui.Message(fmt.Sprintf("Inline variables are %s", p.inline_vars()))
+	}
+
+	if len(p.config.VarsEnv) != 0 {
+		ui.Message(fmt.Sprintf("Env variables are %s", p.envVars()))
 	}
 
 	for _, src := range p.config.Tests {
@@ -300,8 +307,8 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 	ctx := context.TODO()
 
-	strcmd := fmt.Sprintf("cd %s && %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
-		p.config.RemotePath, p.enableSudo(), goss, p.config.GossFile,
+	strcmd := fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
+		p.config.RemotePath, p.enableSudo(), p.envVars(), goss, p.config.GossFile,
 		p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions())
 	ui.Message(fmt.Sprintf("Command : %s", strcmd))
 
@@ -370,6 +377,14 @@ func (p *Provisioner) inline_vars() string {
 		}
 	}
 	return ""
+}
+
+func (p *Provisioner) envVars() string {
+	var sb strings.Builder
+	for env_var, value := range p.config.VarsEnv {
+		sb.WriteString(fmt.Sprintf("%s=\"%s\" ", env_var, value))
+	}
+	return sb.String()
 }
 
 func (p *Provisioner) sslFlag(cmdType string) string {

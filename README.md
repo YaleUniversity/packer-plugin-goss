@@ -50,6 +50,10 @@ There is an example packer build with goss tests in the `example/` directory.
     "format": "",
     "goss_file": "",
     "vars_file": "",
+    "vars_env": {
+      "ARCH": "amd64",
+      "PROVIDER": "{{user `cloud-provider`}}"
+    },
     "vars_inline": {
       "OS": "centos",
       "version": "{{user `version`}}"
