@@ -22,22 +22,6 @@ import (
 const gossSpecFile = "/tmp/goss-spec.yaml"
 const gossDebugSpecFile = "/tmp/debug-goss-spec.yaml"
 
-type cmdTuple struct {
-	cmd, message string
-}
-
-func zip(a, b []string) ([]cmdTuple, error) {
-	if len(a) != len(b) {
-		return nil, fmt.Errorf("zip: arguments must be of same length")
-	}
-
-	r := make([]cmdTuple, len(a), len(a))
-	for i, e := range a {
-		r[i] = cmdTuple{e, b[i]}
-	}
-	return r, nil
-}
-
 // GossConfig holds the config data coming in from the packer template
 type GossConfig struct {
 	// Goss installation
@@ -348,29 +332,24 @@ func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error 
 func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
 
-	cmdList := []string{
-		fmt.Sprintf("cd %s && %s %s %s %s %s render > %s",
+	cmdMap := map[string]string{
+		"render": fmt.Sprintf("cd %s && %s %s %s %s %s render > %s",
 			p.config.RemotePath, p.envVars(), goss, p.config.GossFile,
 			p.vars(), p.inline_vars(), gossSpecFile,
 		),
-		fmt.Sprintf("cd %s && %s %s %s %s %s render -d > %s",
+		"render debug": fmt.Sprintf("cd %s && %s %s %s %s %s render -d > %s",
 			p.config.RemotePath, p.envVars(), goss, p.config.GossFile,
 			p.vars(), p.inline_vars(), gossDebugSpecFile,
 		),
-		fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
+		"validate": fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
 			p.config.RemotePath, p.enableSudo(), p.envVars(), goss, p.config.GossFile,
 			p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions(),
 		),
 	}
 
-	cmdTupleList, err := zip(cmdList, []string{"render", "render debug", "validate"})
-	if err != nil {
-		return err
-	}
-
-	for _, cmd := range cmdTupleList {
-		ui.Say(fmt.Sprintf("Running GOSS %s command: %s", cmd.message, cmd.cmd))
-		err := p.runGossCmd(ui, comm, &packer.RemoteCmd{Command: cmd.cmd}, cmd.message)
+	for message, cmd := range cmdMap {
+		ui.Say(fmt.Sprintf("Running GOSS %s command: %s", message, cmd))
+		err := p.runGossCmd(ui, comm, &packer.RemoteCmd{Command: cmd}, message)
 		if err != nil {
 			return err
 		}
