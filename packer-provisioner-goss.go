@@ -19,6 +19,25 @@ import (
 	"github.com/hashicorp/packer/template/interpolate"
 )
 
+const gossSpecFile = "/tmp/goss-spec.yaml"
+const gossDebugSpecFile = "/tmp/debug-goss-spec.yaml"
+
+type cmdTuple struct {
+	cmd, message string
+}
+
+func zip(a, b []string) ([]cmdTuple, error) {
+	if len(a) != len(b) {
+		return nil, fmt.Errorf("zip: arguments must be of same length")
+	}
+
+	r := make([]cmdTuple, len(a), len(a))
+	for i, e := range a {
+		r[i] = cmdTuple{e, b[i]}
+	}
+	return r, nil
+}
+
 // GossConfig holds the config data coming in from the packer template
 type GossConfig struct {
 	// Goss installation
@@ -273,6 +292,29 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 		return fmt.Errorf("Error running Goss: %s", err)
 	}
 
+	ui.Say("\n\n\nDownloading spec file and debug info")
+	if err := p.downloadSpecs(ui, comm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// downloadSpecs downloads the Goss specs from the remote host to current working dir on local machine
+func (p *Provisioner) downloadSpecs(ui packer.Ui, comm packer.Communicator) error {
+	ui.Message(fmt.Sprintf("Downloading Goss specs from, %s and %s to current dir", gossSpecFile, gossDebugSpecFile))
+	for _, file := range []string{gossSpecFile, gossDebugSpecFile} {
+		f, err := os.Create(file)
+		if err != nil {
+			return fmt.Errorf("Error opening: %s", err)
+		}
+
+		if err = comm.Download(file, f); err != nil {
+			_ = f.Close()
+			return fmt.Errorf("Error downloading %s: %s", file, err)
+		}
+		_ = f.Close()
+	}
 	return nil
 }
 
@@ -302,32 +344,56 @@ func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error 
 	return nil
 }
 
-// runGoss runs the Goss tests
+// runGoss makes test and render goss commands and passes them to executor func runGossCmd
 func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 	goss := fmt.Sprintf("%s", p.config.DownloadPath)
-	ctx := context.TODO()
 
-	strcmd := fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
-		p.config.RemotePath, p.enableSudo(), p.envVars(), goss, p.config.GossFile,
-		p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions())
-	ui.Message(fmt.Sprintf("Command : %s", strcmd))
-
-	cmd := &packer.RemoteCmd{
-		Command: strcmd,
+	cmdList := []string{
+		fmt.Sprintf("cd %s && %s %s %s %s %s render > %s",
+			p.config.RemotePath, p.envVars(), goss, p.config.GossFile,
+			p.vars(), p.inline_vars(), gossSpecFile,
+		),
+		fmt.Sprintf("cd %s && %s %s %s %s %s render -d > %s",
+			p.config.RemotePath, p.envVars(), goss, p.config.GossFile,
+			p.vars(), p.inline_vars(), gossDebugSpecFile,
+		),
+		fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
+			p.config.RemotePath, p.enableSudo(), p.envVars(), goss, p.config.GossFile,
+			p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions(),
+		),
 	}
+
+	cmdTupleList, err := zip(cmdList, []string{"render", "render debug", "validate"})
+	if err != nil {
+		return err
+	}
+
+	for _, cmd := range cmdTupleList {
+		ui.Say(fmt.Sprintf("Running GOSS %s command: %s", cmd.message, cmd.cmd))
+		err := p.runGossCmd(ui, comm, &packer.RemoteCmd{Command: cmd.cmd}, cmd.message)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// runGoss tests and render goss commands.
+func (p *Provisioner) runGossCmd(ui packer.Ui, comm packer.Communicator, cmd *packer.RemoteCmd, message string) error {
+	ctx := context.TODO()
 	if err := cmd.RunWithUi(ctx, comm, ui); err != nil {
 		return err
 	}
 	if cmd.ExitStatus() != 0 {
 		// Inspect mode is on. Report failure but don't fail.
 		if p.config.Inspect {
-			ui.Say(fmt.Sprintf("Goss tests failed"))
+			ui.Say(fmt.Sprintf("Goss %s failed", message))
 			ui.Say(fmt.Sprintf("Inpect mode on : proceeding without failing Packer"))
 		} else {
 			return fmt.Errorf("goss non-zero exit status")
 		}
 	} else {
-		ui.Say(fmt.Sprintf("Goss tests ran successfully"))
+		ui.Say(fmt.Sprintf("Goss %s ran successfully", message))
 	}
 	return nil
 }
