@@ -64,6 +64,9 @@ There is an example packer build with goss tests in the `example/` directory.
 ]
 ```
 
+## Spec files
+Goss spec file and debug spec file (`goss render -d`) are downloaded to `/tmp` folder on local machine from the remote VM. These files are exact specs GOSS validated on the VM. The downloaded GOSS spec can be used to validate any other VM image for equivalency.  
+
 ## Installation
 
 1. Download the most recent release for your platform from [here.](https://github.com/YaleUniversity/packer-provisioner-goss/releases).
