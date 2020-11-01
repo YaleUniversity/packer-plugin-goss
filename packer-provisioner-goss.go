@@ -28,10 +28,10 @@ type GossConfig struct {
 	Version      string
 	Arch         string
 	URL          string
-	DownloadPath string
+	DownloadPath string `mapstructure:"download_path"`
 	Username     string
 	Password     string
-	SkipInstall  bool
+	SkipInstall  bool `mapstructure:"skip_install"`
 	Inspect      bool
 
 	// An array of tests to run.
