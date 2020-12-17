@@ -22,6 +22,13 @@ import (
 const gossSpecFile = "/tmp/goss-spec.yaml"
 const gossDebugSpecFile = "/tmp/debug-goss-spec.yaml"
 
+type OsType string
+
+const (
+	Linux   = OsType("Linux")
+	Windows = OsType("Windows")
+)
+
 // GossConfig holds the config data coming in from the packer template
 type GossConfig struct {
 	// Goss installation
@@ -33,6 +40,7 @@ type GossConfig struct {
 	Password     string
 	SkipInstall  bool
 	Inspect      bool
+	TargetOs     OsType `string:"targetOs"`
 
 	// An array of tests to run.
 	Tests []string
@@ -126,20 +134,30 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		p.config.Arch = "amd64"
 	}
 
+	if p.config.TargetOs == "" {
+		p.config.TargetOs = Linux
+	}
+
 	if p.config.URL == "" {
-		p.config.URL = fmt.Sprintf(
-			"https://github.com/aelsabbahy/goss/releases/download/v%s/goss-linux-%s",
-			p.config.Version, p.config.Arch)
+		p.config.URL = p.getDownloadUrl()
 	}
 
 	if p.config.DownloadPath == "" {
+		os := strings.ToLower(string(p.config.TargetOs))
 		if p.config.URL == "" {
-			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-linux-%s", p.config.Version, p.config.Arch)
+			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-%s-%s", p.config.Version, os, p.config.Arch)
 		} else {
 			list := strings.Split(p.config.URL, "/")
-			arch := strings.Split(list[len(list)-1], "-")[2]
+
+			file := strings.Split(list[len(list)-1], "-")
+			arch := file[2]
+			if p.isGossAlpha() {
+				// includes .exe for windows
+				arch = file[3]
+			}
+
 			version := strings.TrimPrefix(list[len(list)-2], "v")
-			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-linux-%s", version, arch)
+			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-%s-%s", version, os, arch)
 		}
 	}
 
@@ -202,6 +220,11 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		}
 	}
 
+	if p.config.TargetOs != Linux && p.config.TargetOs != Windows {
+		errs = packer.MultiErrorAppend(errs,
+			fmt.Errorf("Os must be %s or %s", Linux, Windows))
+	}
+
 	if errs != nil && len(errs.Errors) > 0 {
 		return errs
 	}
@@ -212,6 +235,12 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 // Provision runs the Goss Provisioner
 func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.Communicator, generatedData map[string]interface{}) error {
 	ui.Say("Provisioning with Goss")
+	ui.Say(fmt.Sprintf("Configured to run on %s", string(p.config.TargetOs)))
+
+	// For Windows need to create the target directory before download
+	if err := p.createDir(ui, comm, p.config.RemotePath); err != nil {
+		return fmt.Errorf("Error creating remote directory: %s", err)
+	}
 
 	if !p.config.SkipInstall {
 		if err := p.installGoss(ui, comm); err != nil {
@@ -222,10 +251,6 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 	}
 
 	ui.Say("Uploading goss tests...")
-	if err := p.createDir(ui, comm, p.config.RemotePath); err != nil {
-		return fmt.Errorf("Error creating remote directory: %s", err)
-	}
-
 	if p.config.VarsFile != "" {
 		vf, err := os.Stat(p.config.VarsFile)
 		if err != nil {
@@ -416,7 +441,13 @@ func (p *Provisioner) inline_vars() string {
 	if len(p.config.VarsInline) != 0 {
 		inlineVarsJson, err := json.Marshal(p.config.VarsInline)
 		if err == nil {
-			return fmt.Sprintf("--vars-inline '%s'", string(inlineVarsJson))
+			switch p.config.TargetOs {
+			case Windows:
+				// don't include single quotes which confused cmd parsing
+				return fmt.Sprintf("--vars-inline %s", string(inlineVarsJson))
+			default:
+				return fmt.Sprintf("--vars-inline '%s'", string(inlineVarsJson))
+			}
 		} else {
 			fmt.Errorf("Error converting inline vars to json string %v", err)
 		}
@@ -424,10 +455,36 @@ func (p *Provisioner) inline_vars() string {
 	return ""
 }
 
+func (p *Provisioner) getDownloadUrl() string {
+	os := strings.ToLower(string(p.config.TargetOs))
+	filename := fmt.Sprintf("goss-%s-%s", os, p.config.Arch)
+
+	if p.isGossAlpha() {
+		filename = fmt.Sprintf("goss-alpha-%s-%s", os, p.config.Arch)
+	}
+
+	if p.config.TargetOs == Windows {
+		filename = fmt.Sprintf("%s.exe", filename)
+	}
+
+	return fmt.Sprintf("https://github.com/aelsabbahy/goss/releases/download/v%s/%s", p.config.Version, filename)
+}
+
+func (p *Provisioner) isGossAlpha() bool {
+	return p.config.VarsEnv["GOSS_USE_ALPHA"] == "1"
+}
+
 func (p *Provisioner) envVars() string {
 	var sb strings.Builder
 	for env_var, value := range p.config.VarsEnv {
-		sb.WriteString(fmt.Sprintf("%s=\"%s\" ", env_var, value))
+		switch p.config.TargetOs {
+		case Windows:
+			// Windows requires a call to "set" as separate command seperated by && for each env variable
+			sb.WriteString(fmt.Sprintf("set \"%s=%s\" && ", env_var, value))
+		default:
+			sb.WriteString(fmt.Sprintf("%s=\"%s\" ", env_var, value))
+		}
+
 	}
 	return sb.String()
 }
@@ -481,7 +538,7 @@ func (p *Provisioner) createDir(ui packer.Ui, comm packer.Communicator, dir stri
 	ctx := context.TODO()
 
 	cmd := &packer.RemoteCmd{
-		Command: fmt.Sprintf("mkdir -p '%s'", dir),
+		Command: p.mkDir(dir),
 	}
 	if err := cmd.RunWithUi(ctx, comm, ui); err != nil {
 		return err
@@ -490,6 +547,15 @@ func (p *Provisioner) createDir(ui packer.Ui, comm packer.Communicator, dir stri
 		return fmt.Errorf("non-zero exit status")
 	}
 	return nil
+}
+
+func (p *Provisioner) mkDir(dir string) string {
+	switch p.config.TargetOs {
+	case Windows:
+		return fmt.Sprintf("powershell /c mkdir -p '%s'", dir)
+	default:
+		return fmt.Sprintf("mkdir -p '%s'", dir)
+	}
 }
 
 // uploadFile uploads a file
