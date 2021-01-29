@@ -19,14 +19,11 @@ import (
 	"github.com/hashicorp/packer/template/interpolate"
 )
 
-const gossSpecFile = "/tmp/goss-spec.yaml"
-const gossDebugSpecFile = "/tmp/debug-goss-spec.yaml"
-
-type OsType string
-
 const (
-	Linux   = OsType("Linux")
-	Windows = OsType("Windows")
+	gossSpecFile      = "/tmp/goss-spec.yaml"
+	gossDebugSpecFile = "/tmp/debug-goss-spec.yaml"
+	linux             = "Linux"
+	windows           = "Windows"
 )
 
 // GossConfig holds the config data coming in from the packer template
@@ -40,7 +37,7 @@ type GossConfig struct {
 	Password     string
 	SkipInstall  bool
 	Inspect      bool
-	TargetOs     OsType `string:"targetOs"`
+	TargetOs     string
 
 	// An array of tests to run.
 	Tests []string
@@ -135,7 +132,7 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	if p.config.TargetOs == "" {
-		p.config.TargetOs = Linux
+		p.config.TargetOs = linux
 	}
 
 	if p.config.URL == "" {
@@ -143,7 +140,7 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	if p.config.DownloadPath == "" {
-		os := strings.ToLower(string(p.config.TargetOs))
+		os := strings.ToLower(p.config.TargetOs)
 		if p.config.URL == "" {
 			p.config.DownloadPath = fmt.Sprintf("/tmp/goss-%s-%s-%s", p.config.Version, os, p.config.Arch)
 		} else {
@@ -152,7 +149,8 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 			file := strings.Split(list[len(list)-1], "-")
 			arch := file[2]
 			if p.isGossAlpha() {
-				// includes .exe for windows
+				// The format of the alpha files includes an additional entry
+				// ex: goss-alpha-windows-amd64.exe
 				arch = file[3]
 			}
 
@@ -220,9 +218,9 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 		}
 	}
 
-	if p.config.TargetOs != Linux && p.config.TargetOs != Windows {
+	if p.config.TargetOs != linux && p.config.TargetOs != windows {
 		errs = packer.MultiErrorAppend(errs,
-			fmt.Errorf("Os must be %s or %s", Linux, Windows))
+			fmt.Errorf("Os must be %s or %s", linux, windows))
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
@@ -442,7 +440,7 @@ func (p *Provisioner) inline_vars() string {
 		inlineVarsJson, err := json.Marshal(p.config.VarsInline)
 		if err == nil {
 			switch p.config.TargetOs {
-			case Windows:
+			case windows:
 				// don't include single quotes which confused cmd parsing
 				return fmt.Sprintf("--vars-inline %s", string(inlineVarsJson))
 			default:
@@ -463,7 +461,7 @@ func (p *Provisioner) getDownloadUrl() string {
 		filename = fmt.Sprintf("goss-alpha-%s-%s", os, p.config.Arch)
 	}
 
-	if p.config.TargetOs == Windows {
+	if p.config.TargetOs == windows {
 		filename = fmt.Sprintf("%s.exe", filename)
 	}
 
@@ -478,7 +476,7 @@ func (p *Provisioner) envVars() string {
 	var sb strings.Builder
 	for env_var, value := range p.config.VarsEnv {
 		switch p.config.TargetOs {
-		case Windows:
+		case windows:
 			// Windows requires a call to "set" as separate command seperated by && for each env variable
 			sb.WriteString(fmt.Sprintf("set \"%s=%s\" && ", env_var, value))
 		default:
@@ -551,7 +549,7 @@ func (p *Provisioner) createDir(ui packer.Ui, comm packer.Communicator, dir stri
 
 func (p *Provisioner) mkDir(dir string) string {
 	switch p.config.TargetOs {
-	case Windows:
+	case windows:
 		return fmt.Sprintf("powershell /c mkdir -p '%s'", dir)
 	default:
 		return fmt.Sprintf("mkdir -p '%s'", dir)

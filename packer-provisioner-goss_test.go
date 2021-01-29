@@ -51,7 +51,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 				Password:      "",
 				SkipInstall:   false,
 				Inspect:       false,
-				TargetOs:      Linux,
+				TargetOs:      "Linux",
 				Tests:         []string{"example/goss"},
 				RetryTimeout:  "",
 				Sleep:         "",
@@ -89,7 +89,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 				Password:     "",
 				SkipInstall:  false,
 				Inspect:      false,
-				TargetOs:     Windows,
+				TargetOs:     "Windows",
 				Tests:        []string{"example/goss"},
 				RetryTimeout: "",
 				Sleep:        "",
@@ -126,7 +126,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 				Password:      "",
 				SkipInstall:   false,
 				Inspect:       false,
-				TargetOs:      Windows,
+				TargetOs:      "Windows",
 				Tests:         []string{"example/goss"},
 				RetryTimeout:  "",
 				Sleep:         "",
@@ -176,7 +176,7 @@ func TestProvisioner_envVars(t *testing.T) {
 		{
 			name: "Linux",
 			config: GossConfig{
-				TargetOs:      Linux,
+				TargetOs: "Linux",
 				VarsEnv: map[string]string{
 					"somevar": "1",
 				},
@@ -186,7 +186,7 @@ func TestProvisioner_envVars(t *testing.T) {
 		{
 			name: "Windows",
 			config: GossConfig{
-				TargetOs:      Windows,
+				TargetOs: "Windows",
 				VarsEnv: map[string]string{
 					"GOSS_USE_ALPHA": "1",
 				},
@@ -196,16 +196,16 @@ func TestProvisioner_envVars(t *testing.T) {
 		{
 			name: "no vars windows",
 			config: GossConfig{
-				TargetOs:      Windows,
-				VarsEnv: map[string]string{},
+				TargetOs: "Windows",
+				VarsEnv:  map[string]string{},
 			},
 			want: "",
 		},
 		{
 			name: "no vars linux",
 			config: GossConfig{
-				TargetOs:      Linux,
-				VarsEnv: map[string]string{},
+				TargetOs: "Linux",
+				VarsEnv:  map[string]string{},
 			},
 			want: "",
 		},
@@ -233,31 +233,31 @@ func TestProvisioner_envVars(t *testing.T) {
 
 func TestProvisioner_mkDir(t *testing.T) {
 	tests := []struct {
-		name   string
-		config GossConfig
-		dir   string
-		wantcmd   string
+		name    string
+		config  GossConfig
+		dir     string
+		wantcmd string
 	}{
 		{
 			name: "linux",
 			config: GossConfig{
-				TargetOs: Linux,
+				TargetOs: linux,
 			},
-			dir: "/tmp",
+			dir:     "/tmp",
 			wantcmd: "mkdir -p '/tmp'",
 		},
 		{
 			name: "windows",
 			config: GossConfig{
-				TargetOs: Windows,
+				TargetOs: windows,
 			},
-			dir: "/tmp",
+			dir:     "/tmp",
 			wantcmd: "powershell /c mkdir -p '/tmp'",
 		},
 		{
-			name: "no configured os",
-			config: GossConfig{},
-			dir: "/tmp",
+			name:    "no configured os",
+			config:  GossConfig{},
+			dir:     "/tmp",
 			wantcmd: "mkdir -p '/tmp'",
 		},
 	}
