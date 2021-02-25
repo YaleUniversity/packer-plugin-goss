@@ -30,6 +30,7 @@ type FlatGossConfig struct {
 	Format        *string           `mapstructure:"format" cty:"format"`
 	FormatOptions *string           `mapstructure:"format_options" cty:"format_options"`
 	Inspect       *bool             `cty:"inspect"`
+	TargetOs      *string           `cty:"target_os"`
 }
 
 // FlatMapstructure returns a new FlatGossConfig.
@@ -65,6 +66,7 @@ func (*FlatGossConfig) HCL2Spec() map[string]hcldec.Spec {
 		"format":         &hcldec.AttrSpec{Name: "format", Type: cty.String, Required: false},
 		"format_options": &hcldec.AttrSpec{Name: "format_options", Type: cty.String, Required: false},
 		"inspect":        &hcldec.AttrSpec{Name: "inspect", Type: cty.Bool, Required: false},
+		"target_os":      &hcldec.AttrSpec{Name: "target_os", Type: cty.String, Required: false},
 	}
 	return s
 }

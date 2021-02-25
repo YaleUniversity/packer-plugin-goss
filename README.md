@@ -2,7 +2,7 @@
 
 Wouldn't it be nice if you could run [goss](https://github.com/aelsabbahy/goss) tests against an image during a packer build?
 
-Well, I thought it would, so now you can!  This currently only works for building a `linux` image since goss only runs in linux.
+Well, I thought it would, so now you can!  
 
 This runs during the provisioning process since the machine being provisioned is only available at that time.
 
@@ -50,6 +50,7 @@ There is an example packer build with goss tests in the `example/` directory.
     "format": "",
     "goss_file": "",
     "vars_file": "",
+    "targetOs": "Linux",
     "vars_env": {
       "ARCH": "amd64",
       "PROVIDER": "{{user `cloud-provider`}}"
@@ -66,6 +67,10 @@ There is an example packer build with goss tests in the `example/` directory.
 
 ## Spec files
 Goss spec file and debug spec file (`goss render -d`) are downloaded to `/tmp` folder on local machine from the remote VM. These files are exact specs GOSS validated on the VM. The downloaded GOSS spec can be used to validate any other VM image for equivalency.  
+
+## Windows support
+
+This now has support for Windows. Set the optional parameter `targetOs` to `Windows`. Currently, the `vars_env` parameter must include `GOSS_USE_ALPHA=1` as specified in [goss's feature parity document](https://github.com/aelsabbahy/goss/blob/master/docs/platform-feature-parity.md#platform-feature-parity).  In the future when goss come of of alpha for Windows this parameter will not be required.
 
 ## Installation
 
@@ -91,6 +96,7 @@ Goss spec file and debug spec file (`goss render -d`) are downloaded to `/tmp` f
 
 ```bash
 docker run --rm -it -v "$PWD":/usr/src/packer-provisioner-goss -w /usr/src/packer-provisioner-goss -e 'VERSION=v1.0.0' golang:1.13 bash
+go test ./...
 for GOOS in darwin linux windows; do
   for GOARCH in 386 amd64; do
     export GOOS GOARCH
