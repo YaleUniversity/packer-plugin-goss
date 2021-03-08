@@ -13,10 +13,10 @@ import (
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 
-	"github.com/hashicorp/packer/helper/config"
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/packer/plugin"
-	"github.com/hashicorp/packer/template/interpolate"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/plugin"
+	"github.com/hashicorp/packer-plugin-sdk/template/config"
+	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 )
 
 const (
@@ -32,10 +32,10 @@ type GossConfig struct {
 	Version      string
 	Arch         string
 	URL          string
-	DownloadPath string
+	DownloadPath string `mapstructure:"download_path"`
 	Username     string
 	Password     string
-	SkipInstall  bool
+	SkipInstall  bool `mapstructure:"skip_install"`
 	Inspect      bool
 	TargetOs     string
 
