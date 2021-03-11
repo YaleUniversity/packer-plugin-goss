@@ -37,7 +37,7 @@ type GossConfig struct {
 	Password     string
 	SkipInstall  bool `mapstructure:"skip_install"`
 	Inspect      bool
-	TargetOs     string
+	TargetOs     string `mapstructure:"target_os"`
 
 	// An array of tests to run.
 	Tests []string
