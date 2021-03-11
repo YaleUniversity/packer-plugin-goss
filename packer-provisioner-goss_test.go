@@ -72,8 +72,8 @@ func TestProvisioner_Prepare(t *testing.T) {
 			name: "Windows",
 			input: []interface{}{
 				map[string]interface{}{
-					"tests":    []string{"example/goss"},
-					"targetOs": "Windows",
+					"tests":     []string{"example/goss"},
+					"target_os": "Windows",
 					"vars_env": map[string]string{
 						"GOSS_USE_ALPHA": "1",
 					},
@@ -112,8 +112,8 @@ func TestProvisioner_Prepare(t *testing.T) {
 			name: "Windows non alpha",
 			input: []interface{}{
 				map[string]interface{}{
-					"tests":    []string{"example/goss"},
-					"targetOs": "Windows",
+					"tests":     []string{"example/goss"},
+					"target_os": "Windows",
 				},
 			},
 			wantErr: false,

@@ -18,7 +18,7 @@ type FlatGossConfig struct {
 	Password      *string           `cty:"password" hcl:"password"`
 	SkipInstall   *bool             `mapstructure:"skip_install" cty:"skip_install" hcl:"skip_install"`
 	Inspect       *bool             `cty:"inspect" hcl:"inspect"`
-	TargetOs      *string           `cty:"target_os" hcl:"target_os"`
+	TargetOs      *string           `mapstructure:"target_os" cty:"target_os" hcl:"target_os"`
 	Tests         []string          `cty:"tests" hcl:"tests"`
 	RetryTimeout  *string           `mapstructure:"retry_timeout" cty:"retry_timeout" hcl:"retry_timeout"`
 	Sleep         *string           `mapstructure:"sleep" cty:"sleep" hcl:"sleep"`

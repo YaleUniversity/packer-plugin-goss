@@ -50,7 +50,7 @@ There is an example packer build with goss tests in the `example/` directory.
     "format": "",
     "goss_file": "",
     "vars_file": "",
-    "targetOs": "Linux",
+    "target_os": "Linux",
     "vars_env": {
       "ARCH": "amd64",
       "PROVIDER": "{{user `cloud-provider`}}"
@@ -70,7 +70,7 @@ Goss spec file and debug spec file (`goss render -d`) are downloaded to `/tmp` f
 
 ## Windows support
 
-This now has support for Windows. Set the optional parameter `targetOs` to `Windows`. Currently, the `vars_env` parameter must include `GOSS_USE_ALPHA=1` as specified in [goss's feature parity document](https://github.com/aelsabbahy/goss/blob/master/docs/platform-feature-parity.md#platform-feature-parity).  In the future when goss come of of alpha for Windows this parameter will not be required.
+This now has support for Windows. Set the optional parameter `target_os` to `Windows`. Currently, the `vars_env` parameter must include `GOSS_USE_ALPHA=1` as specified in [goss's feature parity document](https://github.com/aelsabbahy/goss/blob/master/docs/platform-feature-parity.md#platform-feature-parity).  In the future when goss come of of alpha for Windows this parameter will not be required.
 
 ## Installation
 
