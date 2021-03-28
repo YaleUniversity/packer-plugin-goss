@@ -441,8 +441,8 @@ func (p *Provisioner) inline_vars() string {
 		if err == nil {
 			switch p.config.TargetOs {
 			case windows:
-				// don't include single quotes which confused cmd parsing
-				return fmt.Sprintf("--vars-inline %s", string(inlineVarsJson))
+				// don't include single quotes around the json string and replace " with ' otherwise the variables are not recognised
+				return fmt.Sprintf("--vars-inline %s", strings.Replace(string(inlineVarsJson), "\"", "'", -1))
 			default:
 				return fmt.Sprintf("--vars-inline '%s'", string(inlineVarsJson))
 			}
