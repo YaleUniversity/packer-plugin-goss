@@ -1,6 +1,6 @@
 module github.com/YaleUniversity/packer-provisioner-goss/v3
 
-go 1.15
+go 1.16
 
 require (
 	github.com/hashicorp/hcl/v2 v2.8.0
