@@ -31,10 +31,10 @@ There is an example packer build with goss tests in the `example/` directory.
 
     # Packer Provisioner Args
     "arch": "amd64",
-    "downloadPath": "/tmp/goss-VERSION-linux-ARCH",
+    "download_path": "/tmp/goss-VERSION-linux-ARCH",
     "inspect": "{{user `inspect_mode`}}",
     "password": "",
-    "skipInstall": false,
+    "skip_install": false,
     "url":"https://github.com/aelsabbahy/goss/releases/download/vVERSION/goss-linux-ARCH",
     "username": "",
     "version": "0.3.2",
