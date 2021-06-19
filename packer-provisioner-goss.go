@@ -76,6 +76,9 @@ type GossConfig struct {
 	// This defaults to remote_folder/goss
 	RemotePath string `mapstructure:"remote_path"`
 
+	// Should be download of spec file and debug info be skipped
+	SkipDownload bool `mapstructure:"skip_download"`
+
 	// The format to use for test output
 	// Available: [documentation json json_oneline junit nagios nagios_verbose rspecish silent tap]
 	// Default:   rspecish
@@ -299,9 +302,13 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 		return fmt.Errorf("Error running Goss: %s", err)
 	}
 
-	ui.Say("\n\n\nDownloading spec file and debug info")
-	if err := p.downloadSpecs(ui, comm); err != nil {
-		return err
+	if !p.config.SkipDownload {
+		ui.Say("\n\n\nDownloading spec file and debug info")
+		if err := p.downloadSpecs(ui, comm); err != nil {
+			return err
+		}
+	} else {
+		ui.Message("Skipping Goss spec file and debug info download")
 	}
 
 	return nil
