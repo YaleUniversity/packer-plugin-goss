@@ -397,7 +397,7 @@ func (p *Provisioner) runGossCmd(ui packer.Ui, comm packer.Communicator, cmd *pa
 		// Inspect mode is on. Report failure but don't fail.
 		if p.config.Inspect {
 			ui.Say(fmt.Sprintf("Goss %s failed", message))
-			ui.Say(fmt.Sprintf("Inpect mode on : proceeding without failing Packer"))
+			ui.Say(fmt.Sprintf("Inspect mode on : proceeding without failing Packer"))
 		} else {
 			return fmt.Errorf("goss non-zero exit status")
 		}
