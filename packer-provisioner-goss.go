@@ -311,7 +311,7 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 func (p *Provisioner) downloadSpecs(ui packer.Ui, comm packer.Communicator) error {
 	ui.Message(fmt.Sprintf("Downloading Goss specs from, %s and %s to current dir", gossSpecFile, gossDebugSpecFile))
 	for _, file := range []string{gossSpecFile, gossDebugSpecFile} {
-		f, err := os.Create(file)
+		f, err := os.Create(filepath.Base(file))
 		if err != nil {
 			return fmt.Errorf("Error opening: %s", err)
 		}
