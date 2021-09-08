@@ -1,4 +1,4 @@
-//go:generate mapstructure-to-hcl2 -type GossConfig
+//go:generate packer-sdc mapstructure-to-hcl2 -type GossConfig
 
 package main
 
@@ -75,6 +75,9 @@ type GossConfig struct {
 	// The remote path where the goss tests will be uploaded.
 	// This defaults to remote_folder/goss
 	RemotePath string `mapstructure:"remote_path"`
+
+	// Should be download of spec file and debug info be skipped
+	SkipDownload bool `mapstructure:"skip_download"`
 
 	// The format to use for test output
 	// Available: [documentation json json_oneline junit nagios nagios_verbose rspecish silent tap]
@@ -299,9 +302,13 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 		return fmt.Errorf("Error running Goss: %s", err)
 	}
 
-	ui.Say("\n\n\nDownloading spec file and debug info")
-	if err := p.downloadSpecs(ui, comm); err != nil {
-		return err
+	if !p.config.SkipDownload {
+		ui.Say("\n\n\nDownloading spec file and debug info")
+		if err := p.downloadSpecs(ui, comm); err != nil {
+			return err
+		}
+	} else {
+		ui.Message("Skipping Goss spec file and debug info download")
 	}
 
 	return nil
@@ -311,7 +318,7 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 func (p *Provisioner) downloadSpecs(ui packer.Ui, comm packer.Communicator) error {
 	ui.Message(fmt.Sprintf("Downloading Goss specs from, %s and %s to current dir", gossSpecFile, gossDebugSpecFile))
 	for _, file := range []string{gossSpecFile, gossDebugSpecFile} {
-		f, err := os.Create(file)
+		f, err := os.Create(filepath.Base(file))
 		if err != nil {
 			return fmt.Errorf("Error opening: %s", err)
 		}
@@ -390,7 +397,7 @@ func (p *Provisioner) runGossCmd(ui packer.Ui, comm packer.Communicator, cmd *pa
 		// Inspect mode is on. Report failure but don't fail.
 		if p.config.Inspect {
 			ui.Say(fmt.Sprintf("Goss %s failed", message))
-			ui.Say(fmt.Sprintf("Inpect mode on : proceeding without failing Packer"))
+			ui.Say(fmt.Sprintf("Inspect mode on : proceeding without failing Packer"))
 		} else {
 			return fmt.Errorf("goss non-zero exit status")
 		}
