@@ -23,6 +23,7 @@ archives:
       - goos: windows
         format: zip
   -
+    id: zips
     format: zip
     name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 release:
