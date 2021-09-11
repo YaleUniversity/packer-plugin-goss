@@ -43,12 +43,16 @@ builds:
         goarch: '386'
 archives:
   -
+    builds:
+      - default
     format: tar.gz
     name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     files:
       - none*
   -
     id: zips
+    builds:
+      - default
     format: zip
     name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     files:
