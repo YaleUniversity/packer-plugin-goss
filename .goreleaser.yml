@@ -22,11 +22,15 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+  -
+    format: zip
+    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 release:
   prerelease: auto
   name_template: "{{.ProjectName}}-v{{.Version}}"
 checksum:
-  name_template: 'checksums.txt'
+  name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
 changelog:
   sort: asc
   filters:
