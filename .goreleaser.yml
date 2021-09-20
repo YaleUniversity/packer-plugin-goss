@@ -1,0 +1,63 @@
+env:
+  - CGO_ENABLED=0
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+builds:
+  -
+    id: plugin-check
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    hooks:
+      post:
+        # This will check plugin compatibility against latest version of Packer
+        - cmd: |
+            go install github.com/hashicorp/packer/cmd/packer-plugins-check@latest &&
+            packer-plugins-check -load={{ .Name }}
+          dir: "{{ dir .Path}}"
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w -X {{ .ModulePath }}/version.Version={{.Version}} -X {{ .ModulePath }}/version.VersionPrerelease= '
+    goos:
+      - linux
+    goarch:
+      - amd64
+    binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+  -
+    id: default
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - '-s -w -X {{ .ModulePath }}/version.Version={{.Version}} -X {{ .ModulePath }}/version.VersionPrerelease= '
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+archives:
+  -
+    builds:
+      - default
+    format: tar.gz
+    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+  -
+    id: zips
+    builds:
+      - default
+    format: zip
+    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+release:
+  prerelease: auto
+  name_template: "{{.ProjectName}}-v{{.Version}}"
+checksum:
+  name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
