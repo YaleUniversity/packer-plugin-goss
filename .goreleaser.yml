@@ -9,20 +9,16 @@ builds:
     id: plugin-check
     mod_timestamp: '{{ .CommitTimestamp }}'
     hooks:
+      # This will check plugin compatibility against latest version of Packer
       post:
-        # This will check plugin compatibility against latest version of Packer
-        - cmd: |
-            go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest &&
-            packer-sdc plugin-check -load={{ .Name }}
-          dir: "{{ dir .Path}}"
+        - go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
+        - bash -ec 'cd "{{ dir .Path}}" && packer-sdc plugin-check {{ .Name }}'
     flags:
       - -trimpath
     ldflags:
       - '-s -w -X {{ .ModulePath }}/version.Version={{.Version}} -X {{ .ModulePath }}/version.VersionPrerelease= '
-    goos:
-      - linux
-    goarch:
-      - amd64
+    targets:
+      - linux_amd64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
   -
     id: default
