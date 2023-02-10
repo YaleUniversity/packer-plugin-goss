@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/plugin"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
+	"github.com/hashicorp/packer-plugin-sdk/version"
 )
 
 const (
@@ -103,6 +104,7 @@ type Provisioner struct {
 func main() {
 	pps := plugin.NewSet()
 	pps.RegisterProvisioner(plugin.DEFAULT_NAME, new(Provisioner))
+	pps.SetVersion(version.InitializePluginVersion("3.1.4", ""))
 	err := pps.Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
