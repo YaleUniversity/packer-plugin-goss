@@ -1,5 +1,6 @@
 env:
   - CGO_ENABLED=0
+  - PACKER_PROTOCOL_VERSION=x5.0
 before:
   hooks:
     - go mod tidy
@@ -26,24 +27,23 @@ builds:
       - -trimpath
     ldflags:
       - '-s -w -X {{ .ModulePath }}/version.Version={{.Version}} -X {{ .ModulePath }}/version.VersionPrerelease= '
-    targets:
-      - linux_amd64
-      - linux_arm64
-      - darwin_amd64
-      - darwin_arm64
-      - windows_amd64
+    binary: "{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_PROTOCOL_VERSION }}_{{ .Os }}_{{ .Arch }}"
+    goos:
+      - freebsd
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - '386'
+      - arm
+      - arm64
 archives:
   -
     builds:
       - default
-    format: tar.gz
-    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
-  -
-    id: zips
-    builds:
-      - default
     format: zip
-    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_PROTOCOL_VERSION }}_{{ .Os }}_{{ .Arch }}"
 release:
   prerelease: auto
   name_template: "{{.ProjectName}}-v{{.Version}}"
