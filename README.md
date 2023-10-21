@@ -1,68 +1,70 @@
 # Goss Packer Provisioner
-
 Wouldn't it be nice if you could run [goss](https://github.com/aelsabbahy/goss) tests against an image during a packer build?
-
 Well, I thought it would, so now you can!  
 
 This runs during the provisioning process since the machine being provisioned is only available at that time.
-
 There is an example packer build with goss tests in the `example/` directory.
 
 ## Configuration
 
-```json
-"provisioners" : [
-  {
-    "type": "goss",
-    "tests": [
-      "goss/goss.yaml"
-    ]
+```hcl
+packer {
+  required_version = ">= 1.9.0"
+
+  required_plugins {
+    goss = {
+      version = "3.2.0"
+      source  = "github.com/YaleUniversity/goss"
+    }
   }
-]
+}
 ```
 
 ### Additional (optional) properties
 
-```json
-"provisioners" : [
-  {
-    # Packer Args
-    "type": "goss",
-
-    # Packer Provisioner Args
-    "arch": "amd64",
-    "download_path": "/tmp/goss-VERSION-linux-ARCH",
-    "inspect": "{{user `inspect_mode`}}",
-    "password": "",
-    "skip_install": false,
-    "url":"https://github.com/aelsabbahy/goss/releases/download/vVERSION/goss-linux-ARCH",
-    "username": "",
-    "version": "0.3.2",
+```hcl
+build {
+  sources = [".."]
+      
+  provisioner "goss" {
+    # Provisioner Args
+    arch ="amd64" 
+    download_path = "/tmp/goss-VERSION-linux-ARCH"
+    inspect = "{{ inspect_mode }}",
+    password = ""
+    skip_install = false
+    url = "https://github.com/aelsabbahy/goss/releases/download/vVERSION/goss-linux-ARCH"
+    username = ""
+    version = "0.3.2"
 
     # GOSS Args
-    "tests": [
+    tests = [
       "goss/goss.yaml"
-    ],
-    "remote_folder": "/tmp",
-    "remote_path": "/tmp/goss",
-    "skip_ssl": false,
-    "use_sudo": false,
-    "format": "",
-    "goss_file": "",
-    "vars_file": "",
-    "target_os": "Linux",
-    "vars_env": {
-      "ARCH": "amd64",
-      "PROVIDER": "{{user `cloud-provider`}}"
-    },
-    "vars_inline": {
-      "OS": "centos",
-      "version": "{{user `version`}}"
-    },
-    "retry_timeout": "0s",
-    "sleep": "1s"
+    ]
+
+    remote_folder = "/tmp"
+    remote_path  = "/tmp/goss"
+    skip_ssl = false
+    use_sudo = false
+    format = ""
+    goss_file = ""
+    vars_file  = ""
+    target_os = "Linux"
+
+    vars_env = {
+      ARCH = "amd64"
+      PROVIDER = "{{ cloud-provider }}"
+    }
+
+    vars_inline = {
+      OS = "centos",
+      version = "{{ version }}"
+    }
+
+    retry_timeout = "0s"
+    sleep = "1s"
   }
-]
+}
 ```
 
 ## Spec files
@@ -71,24 +73,6 @@ Goss spec file and debug spec file (`goss render -d`) are downloaded to `/tmp` f
 ## Windows support
 
 This now has support for Windows. Set the optional parameter `target_os` to `Windows`. Currently, the `vars_env` parameter must include `GOSS_USE_ALPHA=1` as specified in [goss's feature parity document](https://github.com/aelsabbahy/goss/blob/master/docs/platform-feature-parity.md#platform-feature-parity).  In the future when goss come of of alpha for Windows this parameter will not be required.
-
-## Installation
-
-1. Download the most recent release for your platform from [here.](https://github.com/YaleUniversity/packer-provisioner-goss/releases).
-
-2. Rename the binary to `packer-provisioner-goss`
-
-3. Place the file in one of the directories where packer looks for plugins:
-
-> Once the plugin is named properly, Packer automatically discovers plugins in the following directories in the given order. If a conflicting plugin is found later, it will take precedence over one found earlier.
->
-> The directory where packer is, or the executable directory.
->
-> ~/.packer.d/plugins on Unix systems or %APPDATA%/packer.d/plugins on Windows.
->
-> The current working directory.
-
-4. Set binary to be executable `chmod +x packer-provisioner-goss`
 
 ## Build
 
