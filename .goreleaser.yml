@@ -1,3 +1,4 @@
+# go releaser yaml file
 env:
   - CGO_ENABLED=0
   - PACKER_PROTOCOL_VERSION=x5.0
