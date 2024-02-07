@@ -1,0 +1,22 @@
+name: Test and coverage
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: false
+
+      - name: go get
+        run: go get ./...
+
+      - name: Run tests
+        run: go test -v ./... 
