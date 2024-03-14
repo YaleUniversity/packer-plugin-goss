@@ -34,13 +34,6 @@ builds:
       - '386'
       - arm
       - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64
-      - goos: darwin
-        goarch: '386'
-      - goos: linux
-        goarch: amd64
 archives:
   -
     builds:
