@@ -27,7 +27,7 @@ jobs:
       # if tag release
       -      
         name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           version: latest
@@ -38,7 +38,7 @@ jobs:
       # if no tag test release build
       -
         name: Run GoReleaser skip publishing
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         if: "!startsWith(github.ref, 'refs/tags/v')"
         with:
           version: latest
