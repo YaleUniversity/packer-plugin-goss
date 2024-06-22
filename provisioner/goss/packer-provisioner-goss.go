@@ -330,7 +330,7 @@ func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error 
 	cmd := &packer.RemoteCmd{
 		// Fallback on wget if curl failed for any reason (such as not being installed)
 		Command: fmt.Sprintf(
-			"curl -L %s %s -o %s %s || wget %s %s -O %s %s",
+			"curl -sL %s %s -o %s %s || wget -q %s %s -O %s %s",
 			p.sslFlag("curl"), p.userPass("curl"), p.config.DownloadPath, p.config.URL,
 			p.sslFlag("wget"), p.userPass("wget"), p.config.DownloadPath, p.config.URL),
 	}
