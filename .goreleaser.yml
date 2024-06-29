@@ -4,8 +4,10 @@ env:
   - PACKER_PROTOCOL_VERSION=x5.0
 before:
   hooks:
+    - go generate -tags tools tools/tools.go
     - go mod tidy
     - go test ./...
+    - make plugin-check
 builds:
   -
     id: plugin-check

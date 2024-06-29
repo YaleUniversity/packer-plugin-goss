@@ -1,0 +1,34 @@
+linters-settings:
+  lll:
+    line-length: 180
+    allow-leading-space: true
+linters:
+  enable-all: true
+  disable:
+    - testpackage
+    - forbidigo
+    - paralleltest
+    - wrapcheck
+    - gochecknoglobals
+    - varnamelen
+    - funlen
+    - gomnd
+    - containedctx
+    - nlreturn
+    - wsl
+    - err113
+    - exhaustruct
+    - nolintlint
+    - maintidx
+    - dupl
+    - revive
+    - depguard
+    - tagalign
+    - perfsprint
+    - godox
+    - intrange
+    - copyloopvar
+    - gomoddirectives
+    - goconst
+    - godot
+    - execinquery

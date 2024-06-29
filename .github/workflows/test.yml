@@ -12,11 +12,28 @@ jobs:
       
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.22.6'
           cache: false
+
+      - run: go generate -tags tools tools/tools.go
+
+      - uses: hashicorp/setup-packer@main
+
+      - run: |
+          make build
+          make install
+          packer plugin install github.com/hashicorp/docker
 
       - name: go get
         run: go get ./...
 
-      - name: Run tests
-        run: go test -v ./... 
+      - name: unit tests
+        run: make test
+        env:
+          PACKER_ACC: 1
+
+      - name: acc tests
+        run: make test-acc
+
+      - name: e2e tests
+        run: make test-e2e
