@@ -32,6 +32,7 @@ type FlatGossConfig struct {
 	RemotePath    *string           `mapstructure:"remote_path" cty:"remote_path" hcl:"remote_path"`
 	SkipDownload  *bool             `mapstructure:"skip_download" cty:"skip_download" hcl:"skip_download"`
 	Format        *string           `mapstructure:"format" cty:"format" hcl:"format"`
+	OutputFile    *string           `mapstructure:"output_file" cty:"output_file" hcl:"output_file"`
 	FormatOptions *string           `mapstructure:"format_options" cty:"format_options" hcl:"format_options"`
 }
 
@@ -69,6 +70,7 @@ func (*FlatGossConfig) HCL2Spec() map[string]hcldec.Spec {
 		"remote_path":    &hcldec.AttrSpec{Name: "remote_path", Type: cty.String, Required: false},
 		"skip_download":  &hcldec.AttrSpec{Name: "skip_download", Type: cty.Bool, Required: false},
 		"format":         &hcldec.AttrSpec{Name: "format", Type: cty.String, Required: false},
+		"output_file":    &hcldec.AttrSpec{Name: "output_file", Type: cty.String, Required: false},
 		"format_options": &hcldec.AttrSpec{Name: "format_options", Type: cty.String, Required: false},
 	}
 	return s

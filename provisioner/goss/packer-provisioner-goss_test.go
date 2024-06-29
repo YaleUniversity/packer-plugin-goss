@@ -1,5 +1,3 @@
-//go:generate packer-sdc mapstructure-to-hcl2 -type GossConfig
-
 package goss
 
 import (
@@ -27,8 +25,7 @@ func fakeContext() interpolate.Context {
 }
 
 func TestProvisioner_Prepare(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		name       string
 		input      []interface{}
 		wantErr    bool
@@ -38,21 +35,21 @@ func TestProvisioner_Prepare(t *testing.T) {
 			name: "defaults",
 			input: []interface{}{
 				map[string]interface{}{
-					"tests": []string{"../../example/goss"},
+					"tests": []string{"testdata/goss"},
 				},
 			},
 			wantErr: false,
 			wantConfig: GossConfig{
-				Version:       "0.4.2",
+				Version:       "0.4.7",
 				Arch:          "amd64",
-				URL:           "https://github.com/goss-org/goss/releases/download/v0.4.2/goss-linux-amd64",
-				DownloadPath:  "/tmp/goss-0.4.2-linux-amd64",
+				URL:           "https://github.com/goss-org/goss/releases/download/v0.4.7/goss-linux-amd64",
+				DownloadPath:  "/tmp/goss-0.4.7-linux-amd64",
 				Username:      "",
 				Password:      "",
 				SkipInstall:   false,
 				Inspect:       false,
 				TargetOs:      "Linux",
-				Tests:         []string{"../../example/goss"},
+				Tests:         []string{"testdata/goss"},
 				RetryTimeout:  "",
 				Sleep:         "",
 				UseSudo:       false,
@@ -65,6 +62,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 				RemotePath:    "/tmp/goss",
 				Format:        "",
 				FormatOptions: "",
+				OutputFile:    "",
 				ctx:           fakeContext(),
 			},
 		},
@@ -72,7 +70,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 			name: "Windows",
 			input: []interface{}{
 				map[string]interface{}{
-					"tests":     []string{"../../example/goss"},
+					"tests":     []string{"testdata/goss"},
 					"target_os": "Windows",
 					"vars_env": map[string]string{
 						"GOSS_USE_ALPHA": "1",
@@ -81,16 +79,16 @@ func TestProvisioner_Prepare(t *testing.T) {
 			},
 			wantErr: false,
 			wantConfig: GossConfig{
-				Version:      "0.4.2",
+				Version:      "0.4.7",
 				Arch:         "amd64",
-				URL:          "https://github.com/goss-org/goss/releases/download/v0.4.2/goss-alpha-windows-amd64.exe",
-				DownloadPath: "/tmp/goss-0.4.2-windows-amd64.exe",
+				URL:          "https://github.com/goss-org/goss/releases/download/v0.4.7/goss-alpha-windows-amd64.exe",
+				DownloadPath: "/tmp/goss-0.4.7-windows-amd64.exe",
 				Username:     "",
 				Password:     "",
 				SkipInstall:  false,
 				Inspect:      false,
 				TargetOs:     "Windows",
-				Tests:        []string{"../../example/goss"},
+				Tests:        []string{"testdata/goss"},
 				RetryTimeout: "",
 				Sleep:        "",
 				UseSudo:      false,
@@ -105,6 +103,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 				RemotePath:    "/tmp/goss",
 				Format:        "",
 				FormatOptions: "",
+				OutputFile:    "",
 				ctx:           fakeContext(),
 			},
 		},
@@ -112,22 +111,22 @@ func TestProvisioner_Prepare(t *testing.T) {
 			name: "Windows non alpha",
 			input: []interface{}{
 				map[string]interface{}{
-					"tests":     []string{"../../example/goss"},
+					"tests":     []string{"testdata/goss"},
 					"target_os": "Windows",
 				},
 			},
 			wantErr: false,
 			wantConfig: GossConfig{
-				Version:       "0.4.2",
+				Version:       "0.4.7",
 				Arch:          "amd64",
-				URL:           "https://github.com/goss-org/goss/releases/download/v0.4.2/goss-windows-amd64.exe",
-				DownloadPath:  "/tmp/goss-0.4.2-windows-amd64.exe",
+				URL:           "https://github.com/goss-org/goss/releases/download/v0.4.7/goss-windows-amd64.exe",
+				DownloadPath:  "/tmp/goss-0.4.7-windows-amd64.exe",
 				Username:      "",
 				Password:      "",
 				SkipInstall:   false,
 				Inspect:       false,
 				TargetOs:      "Windows",
-				Tests:         []string{"../../example/goss"},
+				Tests:         []string{"testdata/goss"},
 				RetryTimeout:  "",
 				Sleep:         "",
 				UseSudo:       false,
@@ -140,6 +139,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 				RemotePath:    "/tmp/goss",
 				Format:        "",
 				FormatOptions: "",
+				OutputFile:    "",
 				ctx:           fakeContext(),
 			},
 		},
@@ -161,13 +161,11 @@ func TestProvisioner_Prepare(t *testing.T) {
 				t.Logf("got config= %v", p.config)
 				t.Logf("want config= %v", tt.wantConfig)
 			}
-
 		})
 	}
 }
 
 func TestProvisioner_envVars(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		config GossConfig

@@ -3,7 +3,7 @@ Wouldn't it be nice if you could run [goss](https://github.com/aelsabbahy/goss) 
 Well, I thought it would, so now you can!  
 
 This runs during the provisioning process since the machine being provisioned is only available at that time.
-There is an example packer build with goss tests in the `example/` directory.
+There is an example packer build with `goss` tests in the [`example/`](https://github.com/YaleUniversity/packer-plugin-goss/tree/master/example) directory.
 
 ## Configuration
 
@@ -20,6 +20,58 @@ packer {
 }
 ```
 
+## Quickstart Example
+**This example assumes you have a file `goss.yaml` in your `PWD` containing goss tests**:
+```hcl
+# example/alpine.pkr.hcl
+packer {
+  required_version = ">= 1.9.0"
+
+  required_plugins {
+    goss = {
+      version = "v0.0.1"
+      source  = "github.com/YaleUniversity/goss"
+    }
+    docker = {
+      source  = "github.com/hashicorp/docker"
+      version = "v1.0.10"
+    }
+  }
+}
+
+# fetch a normal alpine container and export the image as alpine.tar
+source "docker" "alpine" {
+  image       = "alpine"
+  export_path = "alpine.tar"
+}
+
+build {
+  # apply build params against the alpine container
+  sources = ["docker.alpine"]
+
+  # run goss tests using goss provisioner
+  provisioner "goss" {
+    # download and install goss to /tmp/goss_install within the target system
+    download_path = "/tmp/goss_install"
+
+    # run goss tests in goss.yaml
+    tests = ["./goss.yaml"]
+
+    # output results as junit
+    format = "junit"
+
+    # write results to /tmp/goss_test_results.xml, which will then be copied to the hosts CWD that is running packer
+    output_file = "/tmp/goss_test_results.xml"
+  }
+
+
+  # output the test results just for demo purposes
+  provisioner "shell-local" {
+    inline = ["cat goss_test_results.xml"]
+  }
+}
+```
+
 ### Additional (optional) properties
 
 ```hcl
@@ -30,7 +82,7 @@ build {
     # Provisioner Args
     arch ="amd64" 
     download_path = "/tmp/goss-VERSION-linux-ARCH"
-    inspect = "{{ inspect_mode }}",
+    inspect = "{{ inspect_mode }}"
     password = ""
     skip_install = false
     url = "https://github.com/aelsabbahy/goss/releases/download/vVERSION/goss-linux-ARCH"
@@ -73,22 +125,6 @@ Goss spec file and debug spec file (`goss render -d`) are downloaded to `/tmp` f
 ## Windows support
 
 This now has support for Windows. Set the optional parameter `target_os` to `Windows`. Currently, the `vars_env` parameter must include `GOSS_USE_ALPHA=1` as specified in [goss's feature parity document](https://github.com/aelsabbahy/goss/blob/master/docs/platform-feature-parity.md#platform-feature-parity).  In the future when goss come of of alpha for Windows this parameter will not be required.
-
-## Build
-
-### Using Golang docker image
-
-```bash
-docker run --rm -it -v "$PWD":/usr/src/packer-provisioner-goss -w /usr/src/packer-provisioner-goss -e 'VERSION=v1.0.0' golang:1.13 bash
-go test ./...
-for GOOS in darwin linux windows; do
-  for GOARCH in 386 amd64; do
-    export GOOS GOARCH
-      go get -v ./...
-      go build -v -o packer-provisioner-goss-${VERSION}-$GOOS-$GOARCH
-  done
-done
-```
 
 ## Author
 
