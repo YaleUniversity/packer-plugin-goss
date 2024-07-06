@@ -12,13 +12,13 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
-
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 )
 
 const (
+	gossVersion       = "0.4.7"
 	gossSpecFile      = "/tmp/goss-spec.yaml"
 	gossDebugSpecFile = "/tmp/debug-goss-spec.yaml"
 	linux             = "Linux"
@@ -83,6 +83,9 @@ type GossConfig struct {
 	// Default:   rspecish
 	Format string `mapstructure:"format"`
 
+	// Destination of the file to write the output to.
+	OutputFile string `mapstructure:"output_file"`
+
 	// The format options to use for printing test output
 	// Available: [perfdata verbose pretty]
 	// Default:   verbose
@@ -91,8 +94,10 @@ type GossConfig struct {
 	ctx interpolate.Context
 }
 
-var validFormats = []string{"documentation", "json", "json_oneline", "junit", "nagios", "nagios_verbose", "rspecish", "silent", "tap"}
-var validFormatOptions = []string{"perfdata", "verbose", "pretty"}
+var (
+	validFormats       = []string{"documentation", "json", "json_oneline", "junit", "nagios", "nagios_verbose", "rspecish", "silent", "tap"}
+	validFormatOptions = []string{"perfdata", "verbose", "pretty"}
+)
 
 // Provisioner implements a packer Provisioner
 type Provisioner struct {
@@ -117,7 +122,7 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	if p.config.Version == "" {
-		p.config.Version = "0.4.2"
+		p.config.Version = gossVersion
 	}
 
 	if p.config.Arch == "" {
@@ -292,6 +297,13 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 		return fmt.Errorf("Error running Goss: %s", err)
 	}
 
+	if p.config.OutputFile != "" {
+		ui.Say("\n\n\nDownloading Goss test result file")
+		if err := p.downloadTestResults(ui, comm); err != nil {
+			return err
+		}
+	}
+
 	if !p.config.SkipDownload {
 		ui.Say("\n\n\nDownloading spec file and debug info")
 		if err := p.downloadSpecs(ui, comm); err != nil {
@@ -299,6 +311,24 @@ func (p *Provisioner) Provision(ctx context.Context, ui packer.Ui, comm packer.C
 		}
 	} else {
 		ui.Message("Skipping Goss spec file and debug info download")
+	}
+
+	return nil
+}
+
+// downloadSpecs downloads the Goss specs from the remote host to current working dir on local machine
+func (p *Provisioner) downloadTestResults(ui packer.Ui, comm packer.Communicator) error {
+	ui.Message(fmt.Sprintf("Downloading Goss test results from %s to current dir", p.config.OutputFile))
+
+	f, err := os.Create(filepath.Base(p.config.OutputFile))
+	if err != nil {
+		return fmt.Errorf("Error opening: %s", err)
+	}
+
+	defer f.Close()
+
+	if err := comm.Download(p.config.OutputFile, f); err != nil {
+		return fmt.Errorf("Error downloading %s: %s", p.config.OutputFile, err)
 	}
 
 	return nil
@@ -334,6 +364,7 @@ func (p *Provisioner) installGoss(ui packer.Ui, comm packer.Communicator) error 
 			p.sslFlag("curl"), p.userPass("curl"), p.config.DownloadPath, p.config.URL,
 			p.sslFlag("wget"), p.userPass("wget"), p.config.DownloadPath, p.config.URL),
 	}
+
 	ui.Message(fmt.Sprintf("Downloading Goss to %s", p.config.DownloadPath))
 	if err := cmd.RunWithUi(ctx, comm, ui); err != nil {
 		return fmt.Errorf("Unable to download Goss: %s", err)
@@ -361,9 +392,9 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 			p.config.RemotePath, p.envVars(), goss, p.config.GossFile,
 			p.vars(), p.inline_vars(), gossDebugSpecFile,
 		),
-		"validate": fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
+		"validate": fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s %s",
 			p.config.RemotePath, p.enableSudo(), p.envVars(), goss, p.config.GossFile,
-			p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions(),
+			p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions(), p.outputFile(),
 		),
 	}
 
@@ -395,6 +426,20 @@ func (p *Provisioner) runGossCmd(ui packer.Ui, comm packer.Communicator, cmd *pa
 		ui.Say(fmt.Sprintf("Goss %s ran successfully", message))
 	}
 	return nil
+}
+
+func (p *Provisioner) outputFile() string {
+	if p.config.OutputFile == "" {
+		return ""
+	}
+
+	// winodws
+	if p.config.TargetOs == windows {
+		return fmt.Sprintf("| Tee-Object -FilePath \"%s\"", p.config.OutputFile)
+	}
+
+	// linux
+	return fmt.Sprintf("| tee \"%s\"", p.config.OutputFile)
 }
 
 func (p *Provisioner) retryTimeout() string {
@@ -479,7 +524,6 @@ func (p *Provisioner) envVars() string {
 		default:
 			sb.WriteString(fmt.Sprintf("%s=\"%s\" ", env_var, value))
 		}
-
 	}
 	return sb.String()
 }

@@ -1,1 +1,6 @@
 example/packer_cache
+.envrc
+packer-plugin-goss
+tests/debug-goss-spec.yaml
+tests/goss-spec.yaml
+tests/goss.json
