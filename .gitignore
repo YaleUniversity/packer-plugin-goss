@@ -1,1 +1,4 @@
-example/packer_cache
+.envrc
+packer-plugin-goss
+**/*.tar
+**/test-results.xml

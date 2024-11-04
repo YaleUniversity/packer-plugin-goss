@@ -1,0 +1,5 @@
+package:
+  {{ .Vars.pkg }}:
+    installed: {{ .Vars.installed }}
+  curl:
+    installed: {{ .Env.curl }}
