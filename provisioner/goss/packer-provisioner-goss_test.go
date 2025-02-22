@@ -83,7 +83,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 			wantConfig: GossConfig{
 				Version:      "0.4.2",
 				Arch:         "amd64",
-				URL:          "https://github.com/goss-org/goss/releases/download/v0.4.2/goss-alpha-windows-amd64.exe",
+				URL:          "https://github.com/goss-org/goss/releases/download/v0.4.2/goss-windows-amd64.exe",
 				DownloadPath: "/tmp/goss-0.4.2-windows-amd64.exe",
 				Username:     "",
 				Password:     "",
@@ -268,6 +268,51 @@ func TestProvisioner_mkDir(t *testing.T) {
 			}
 			if got := p.mkDir(tt.dir); got != tt.wantcmd {
 				t.Errorf("Provisioner.mkDir() = %v, want %v", got, tt.wantcmd)
+			}
+		})
+	}
+}
+
+func TestProvisioner_lessThan(t *testing.T) {
+	tests := []struct {
+		name   string
+		config GossConfig
+		minor  int
+		want   bool
+	}{
+		{
+			name: "less",
+			config: GossConfig{
+				Version: "0.3.0",
+			},
+			minor: 4,
+			want:  true,
+		},
+		{
+			name: "equal",
+			config: GossConfig{
+				Version: "0.4.0",
+			},
+			minor: 4,
+			want:  false,
+		},
+		{
+			name: "greater",
+			config: GossConfig{
+				Version: "0.4.9",
+			},
+			minor: 4,
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Provisioner{
+				config: tt.config,
+			}
+			if got, _ := p.lessThan(tt.minor); got != tt.want {
+				t.Errorf("Provisioner.lessThan() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
@@ -129,7 +130,11 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	if p.config.URL == "" {
-		p.config.URL = p.getDownloadUrl()
+		url, err := p.getDownloadUrl()
+		if err != nil {
+			return err
+		}
+		p.config.URL = url
 	}
 
 	if p.config.DownloadPath == "" {
@@ -141,7 +146,13 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 
 			file := strings.Split(list[len(list)-1], "-")
 			arch := file[2]
-			if p.isGossAlpha() {
+
+			b, err := p.lessThan(4)
+			if err != nil {
+				return err
+			}
+
+			if p.isGossAlpha() && b {
 				// The format of the alpha files includes an additional entry
 				// ex: goss-alpha-windows-amd64.exe
 				arch = file[3]
@@ -450,11 +461,16 @@ func (p *Provisioner) inline_vars() string {
 	return ""
 }
 
-func (p *Provisioner) getDownloadUrl() string {
+func (p *Provisioner) getDownloadUrl() (string, error) {
 	os := strings.ToLower(string(p.config.TargetOs))
 	filename := fmt.Sprintf("goss-%s-%s", os, p.config.Arch)
 
-	if p.isGossAlpha() {
+	b, err := p.lessThan(4)
+	if err != nil {
+		return "", err
+	}
+
+	if p.isGossAlpha() && b {
 		filename = fmt.Sprintf("goss-alpha-%s-%s", os, p.config.Arch)
 	}
 
@@ -462,11 +478,19 @@ func (p *Provisioner) getDownloadUrl() string {
 		filename = fmt.Sprintf("%s.exe", filename)
 	}
 
-	return fmt.Sprintf("https://github.com/goss-org/goss/releases/download/v%s/%s", p.config.Version, filename)
+	return fmt.Sprintf("https://github.com/goss-org/goss/releases/download/v%s/%s", p.config.Version, filename), nil
 }
 
 func (p *Provisioner) isGossAlpha() bool {
 	return p.config.VarsEnv["GOSS_USE_ALPHA"] == "1"
+}
+
+func (p *Provisioner) lessThan(minor int) (bool, error) {
+	minorVersion, err := strconv.Atoi(strings.Split(p.config.Version, ".")[1])
+	if err != nil {
+		return false, err
+	}
+	return minorVersion < minor, nil
 }
 
 func (p *Provisioner) envVars() string {
