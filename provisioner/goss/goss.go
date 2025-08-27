@@ -45,7 +45,7 @@ func RunBlocks(ctx context.Context, ui packer.Ui, comm packer.Communicator, bloc
 	for _, b := range blocks {
 		ui.Say(fmt.Sprintf("Start execution of \"%s\" ...", b.Name()))
 
-		ui.Message(fmt.Sprintf("executing \"%s\"", SanitizeCommands(b.String())))
+		ui.Say(fmt.Sprintf("executing \"%s\"", SanitizeCommands(b.String())))
 
 		if err := b.Run(ctx, ui, comm); err != nil {
 			return fmt.Errorf("error running \"%s\": %w", b.Name(), err)
@@ -66,7 +66,9 @@ func GetIncludedGossFiles(gossFile string, varsFile string, varsInline map[strin
 	// actually set any env vars, its ok to set these as env vars are inherited down to child processes
 	// but we do not spawn any child processes so this wont have any affects on the system
 	for k, v := range envVars {
-		os.Setenv(k, v)
+		if err := os.Setenv(k, v); err != nil {
+			return nil, fmt.Errorf("cannot set env var %s: %w", k, err)
+		}
 	}
 
 	varsInlineStr := ""

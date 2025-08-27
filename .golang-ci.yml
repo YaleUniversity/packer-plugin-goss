@@ -1,3 +1,4 @@
+version: 2
 linters-settings:
   lll:
     line-length: 180
@@ -12,7 +13,6 @@ linters:
     - gochecknoglobals
     - varnamelen
     - funlen
-    - gomnd
     - containedctx
     - nlreturn
     - wsl
@@ -31,4 +31,3 @@ linters:
     - gomoddirectives
     - goconst
     - godot
-    - execinquery

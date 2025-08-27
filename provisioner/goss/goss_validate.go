@@ -100,13 +100,13 @@ func (v *Validate) Validate() error {
 func (v *Validate) Run(ctx context.Context, ui packer.Ui, comm packer.Communicator) error {
 	files := []string{v.GossFile}
 
-	ui.Message(fmt.Sprintf("Detecting wether \"%s\" includes other gossfiles ...", v.GossFile))
+	ui.Say(fmt.Sprintf("Detecting wether \"%s\" includes other gossfiles ...", v.GossFile))
 
 	gossfiles, err := GetIncludedGossFiles(v.GossFile, v.VarsFile, v.VarsInline, v.EnvVars)
 	if err != nil {
-		ui.Message(fmt.Sprintf("Error detecting included goss files: %s. Continuing as not fatal", err.Error()))
+		ui.Say(fmt.Sprintf("Error detecting included goss files: %s. Continuing as not fatal", err.Error()))
 	} else {
-		ui.Message(fmt.Sprintf("Found %v referenced in \"%s\"", gossfiles, v.GossFile))
+		ui.Say(fmt.Sprintf("Found %v referenced in \"%s\"", gossfiles, v.GossFile))
 
 		files = append(files, gossfiles...)
 		if v.VarsFile != "" {
@@ -114,7 +114,7 @@ func (v *Validate) Run(ctx context.Context, ui packer.Ui, comm packer.Communicat
 		}
 	}
 
-	ui.Message(fmt.Sprintf("Uploading %v to target system ....", files))
+	ui.Say(fmt.Sprintf("Uploading %v to target system ....", files))
 
 	for _, src := range files {
 		s, err := os.Stat(src)
@@ -131,6 +131,7 @@ func (v *Validate) Run(ctx context.Context, ui packer.Ui, comm packer.Communicat
 			return fmt.Errorf("error opening file: %w", err)
 		}
 
+		//nolint: errcheck
 		defer f.Close()
 
 		dst := path.Join(DefaultRemotePath, src)
@@ -143,14 +144,14 @@ func (v *Validate) Run(ctx context.Context, ui packer.Ui, comm packer.Communicat
 			return fmt.Errorf("error creating directories: %s", path.Join(DefaultRemotePath, filepath.Dir(src)))
 		}
 
-		ui.Message(fmt.Sprintf("Uploading \"%s\" to \"%s\"", src, dst))
+		ui.Say(fmt.Sprintf("Uploading \"%s\" to \"%s\"", src, dst))
 
 		if err := comm.Upload(dst, f, nil); err != nil {
 			return fmt.Errorf("error uploading file \"%s\" to \"%s\": %w", src, dst, err)
 		}
 	}
 
-	ui.Message("Running goss validate ...")
+	ui.Say("Running goss validate ...")
 	validateCmd := &packer.RemoteCmd{Command: v.String()}
 
 	// test successful -> exit code 0
@@ -161,10 +162,10 @@ func (v *Validate) Run(ctx context.Context, ui packer.Ui, comm packer.Communicat
 		return err
 	}
 
-	ui.Message("goss validate finished")
+	ui.Say("goss validate finished")
 
 	if v.OutputFile != "" {
-		ui.Message(fmt.Sprintf("Downloading goss test result file \"%s\" (target system) to \"%s\" (local) ...", path.Join(DefaultRemotePath, v.OutputFile), filepath.Base(v.OutputFile)))
+		ui.Say(fmt.Sprintf("Downloading goss test result file \"%s\" (target system) to \"%s\" (local) ...", path.Join(DefaultRemotePath, v.OutputFile), filepath.Base(v.OutputFile)))
 
 		if err := DownloadFile(comm, path.Join(DefaultRemotePath, v.OutputFile), filepath.Base(v.OutputFile)); err != nil {
 			return fmt.Errorf("error downloading \"%s\": %w", path.Join(DefaultRemotePath, v.OutputFile), err)
@@ -176,7 +177,7 @@ func (v *Validate) Run(ctx context.Context, ui packer.Ui, comm packer.Communicat
 		}
 
 		// output the absolute path so its easier for folks to upload the file to their CI/CD system as a test artifact ...
-		ui.Message(fmt.Sprintf("Successfully downloaded test result file from target system to \"%s\"", resultsPath))
+		ui.Say(fmt.Sprintf("Successfully downloaded test result file from target system to \"%s\"", resultsPath))
 	}
 
 	return nil

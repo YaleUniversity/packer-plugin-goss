@@ -97,13 +97,13 @@ func (i *Installation) Validate() error {
 
 func (i *Installation) Run(ctx context.Context, ui packer.Ui, comm packer.Communicator) error {
 	if i.SkipInstallation {
-		ui.Message(fmt.Sprintf("Skipping %s", i.Name()))
+		ui.Say(fmt.Sprintf("Skipping %s", i.Name()))
 
 		return nil
 	}
 
 	// create download paths
-	ui.Message(fmt.Sprintf("Creating download path \"%s\" ...", filepath.Dir(i.DownloadPath)))
+	ui.Say(fmt.Sprintf("Creating download path \"%s\" ...", filepath.Dir(i.DownloadPath)))
 	mkDirsCmd := &packer.RemoteCmd{Command: fmt.Sprintf(mkDirCmd, filepath.Dir(i.DownloadPath))}
 
 	err := mkDirsCmd.RunWithUi(ctx, comm, ui)
@@ -112,7 +112,7 @@ func (i *Installation) Run(ctx context.Context, ui packer.Ui, comm packer.Commun
 	}
 
 	// download
-	ui.Message(fmt.Sprintf("Installing goss version %s from %s", i.Version, i.URL))
+	ui.Say(fmt.Sprintf("Installing goss version %s from %s", i.Version, i.URL))
 	downloadCmd := &packer.RemoteCmd{Command: i.String()}
 
 	err = downloadCmd.RunWithUi(ctx, comm, ui)
@@ -121,7 +121,7 @@ func (i *Installation) Run(ctx context.Context, ui packer.Ui, comm packer.Commun
 	}
 
 	// make executable, and test invocation
-	ui.Message("Trying to invoke goss ...")
+	ui.Say("Trying to invoke goss ...")
 	installCmd := &packer.RemoteCmd{Command: fmt.Sprintf(InstallCmd, i.DownloadPath, i.DownloadPath)}
 
 	err = installCmd.RunWithUi(ctx, comm, ui)

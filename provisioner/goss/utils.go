@@ -15,6 +15,7 @@ func DownloadFile(comm packer.Communicator, src, dst string) error {
 		return fmt.Errorf("error opening \"%s\": %w", dst, err)
 	}
 
+	//nolint: errcheck
 	defer f.Close()
 
 	if err := comm.Download(src, f); err != nil {
@@ -40,6 +41,7 @@ func ExportEnvVars(v map[string]string, os string) string {
 	slices.Sort(keys)
 
 	for k, v := range v {
+		//nolint: staticcheck
 		if os == Windows {
 			// Windows requires a call to "set" as separate command separated by && for each env variable
 			envs += fmt.Sprintf("set %s=%s && ", k, v)
