@@ -1,0 +1,9 @@
+package:
+  {{ .Vars.pkg }}:
+    installed: {{ .Vars.pkg_installed }}
+  curl:
+    installed: {{ .Env.curl_installed }}
+
+gossfile:
+  goss_included.yaml: {}
+  dir/dir2/goss.yaml: {}

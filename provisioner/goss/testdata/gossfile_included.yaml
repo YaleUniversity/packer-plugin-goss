@@ -1,0 +1,7 @@
+package:
+  {{ .Vars.pkg }}:
+    installed: {{ .Vars.installed }}
+  curl:
+    installed: {{ .Env.installed }}
+gossfile:
+  ./testdata/goss.yaml: {}
