@@ -46,6 +46,7 @@ build {
     remote_path  = "/tmp/goss"
     skip_ssl = false
     use_sudo = false
+    sudo_password = ""
     format = ""
     goss_file = ""
     vars_file  = ""
