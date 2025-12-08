@@ -49,6 +49,9 @@ type GossConfig struct {
 	// Use Sudo
 	UseSudo bool `mapstructure:"use_sudo"`
 
+	// Use Sudo
+	SudoPassword string `mapstructure:"sudo_password"`
+
 	// skip ssl check flag
 	SkipSSLChk bool `mapstructure:"skip_ssl"`
 
@@ -372,9 +375,9 @@ func (p *Provisioner) runGoss(ui packer.Ui, comm packer.Communicator) error {
 			p.config.RemotePath, p.envVars(), goss, p.config.GossFile,
 			p.vars(), p.inline_vars(), gossDebugSpecFile,
 		),
-		"validate": fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s",
+		"validate": fmt.Sprintf("cd %s && %s %s %s %s %s %s validate --retry-timeout %s --sleep %s %s %s %s",
 			p.config.RemotePath, p.enableSudo(), p.envVars(), goss, p.config.GossFile,
-			p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions(),
+			p.vars(), p.inline_vars(), p.retryTimeout(), p.sleep(), p.format(), p.formatOptions(), p.passSudoPassword(),
 		),
 	}
 
@@ -524,8 +527,18 @@ func (p *Provisioner) sslFlag(cmdType string) string {
 
 // enable sudo if required
 func (p *Provisioner) enableSudo() string {
-	if p.config.UseSudo {
+	if p.config.UseSudo && p.config.SudoPassword == "" {
 		return "sudo"
+	}
+	if p.config.UseSudo && p.config.SudoPassword != "" {
+		return "sudo -S"
+	}
+	return ""
+}
+
+func (p *Provisioner) passSudoPassword() string {
+	if p.config.UseSudo && p.config.SudoPassword != "" {
+		return fmt.Sprintf("<<< %s", p.config.SudoPassword)
 	}
 	return ""
 }

@@ -56,6 +56,7 @@ func TestProvisioner_Prepare(t *testing.T) {
 				RetryTimeout:  "",
 				Sleep:         "",
 				UseSudo:       false,
+				SudoPassword:  "",
 				SkipSSLChk:    false,
 				GossFile:      "",
 				VarsFile:      "",
